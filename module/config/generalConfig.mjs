@@ -145,11 +145,11 @@ export const defaultRestOptions = {
                     img: 'icons/magic/life/cross-worn-green.webp',
                     actionType: 'action',
                     healing: {
-                        type: 'health',
+                        applyTo: healingTypes.hitPoints.id,
                         value: {
                             custom: {
                                 enabled: true,
-                                formula: '1d4 + 1' // should be 1d4 + {tier}. How to use the roll param?
+                                formula: '1d4 + @tier'
                             }
                         }
                     }
@@ -169,11 +169,11 @@ export const defaultRestOptions = {
                     img: 'icons/magic/perception/eye-ringed-green.webp',
                     actionType: 'action',
                     healing: {
-                        type: 'stress',
+                        applyTo: healingTypes.stress.id,
                         value: {
                             custom: {
                                 enabled: true,
-                                formula: '1d4 + 1' // should be 1d4 + {tier}. How to use the roll param?
+                                formula: '1d4 + @tier'
                             }
                         }
                     }
@@ -186,7 +186,23 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-hammer',
             img: 'icons/skills/trades/smithing-anvil-silver-red.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.repairArmor.description'),
-            actions: []
+            actions: [
+                {
+                    type: 'healing',
+                    name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.repairArmor.name'),
+                    img: 'icons/skills/trades/smithing-anvil-silver-red.webp',
+                    actionType: 'action',
+                    healing: {
+                        applyTo: healingTypes.armorStack.id,
+                        value: {
+                            custom: {
+                                enabled: true,
+                                formula: '1d4 + @tier'
+                            }
+                        }
+                    }
+                }
+            ]
         },
         prepare: {
             id: 'prepare',

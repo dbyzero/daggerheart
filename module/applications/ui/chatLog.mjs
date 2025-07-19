@@ -297,15 +297,16 @@ export default class DhpChatLog extends foundry.applications.sidebar.tabs.ChatLo
         await actor.useAction(action);
     };
 
-    actionUseButton = async (_, message) => {
+    actionUseButton = async (event, message) => {
+        const { moveIndex, actionIndex } = event.currentTarget.dataset;
         const parent = await foundry.utils.fromUuid(message.system.actor);
-        const actionType = Object.values(message.system.moves)[0].actions[0];
-        const cls = CONFIG.DH.ACTIONS.actionTypes[actionType.type];
+        const actionType = message.system.moves[moveIndex].actions[actionIndex];
+        const cls = game.system.api.models.actions.actionsTypes[actionType.type];
         const action = new cls(
             { ...actionType, _id: foundry.utils.randomID(), name: game.i18n.localize(actionType.name) },
-            { parent: parent }
+            { parent: parent.system }
         );
 
-        action.use();
+        action.use(event);
     };
 }
