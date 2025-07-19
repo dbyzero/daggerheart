@@ -22,7 +22,7 @@ export default class DhCharacter extends BaseDataActor {
         return {
             ...super.defineSchema(),
             resources: new fields.SchemaField({
-                hitPoints: resourceField(0, 'DAGGERHEART.GENERAL.hitPoints.plural', true),
+                hitPoints: resourceField(0, 'DAGGERHEART.GENERAL.HitPoints.plural', true),
                 stress: resourceField(6, 'DAGGERHEART.GENERAL.stress', true),
                 hope: resourceField(6, 'DAGGERHEART.GENERAL.hope')
             }),
@@ -68,7 +68,7 @@ export default class DhCharacter extends BaseDataActor {
             scars: new fields.TypedObjectField(
                 new fields.SchemaField({
                     name: new fields.StringField({}),
-                    description: new fields.HTMLField()
+                    description: new fields.StringField()
                 })
             ),
             biography: new fields.SchemaField({
@@ -90,7 +90,7 @@ export default class DhCharacter extends BaseDataActor {
             }),
             attack: new ActionField({
                 initial: {
-                    name: 'DAGGERHEART.GENERAL.unarmedStrike',
+                    name: 'Attack',
                     img: 'icons/skills/melee/unarmed-punch-fist-yellow-red.webp',
                     _id: foundry.utils.randomID(),
                     systemPath: 'attack',
@@ -334,6 +334,7 @@ export default class DhCharacter extends BaseDataActor {
         return !primaryWeaponEquipped && !secondaryWeaponEquipped
             ? {
                   ...this.attack,
+                  id: this.attack.id,
                   name: this.activeBeastform ? 'DAGGERHEART.ITEMS.Beastform.attackName' : this.attack.name,
                   img: this.activeBeastform ? 'icons/creatures/claws/claw-straight-brown.webp' : this.attack.img
               }
@@ -520,13 +521,14 @@ export default class DhCharacter extends BaseDataActor {
         const data = super.getRollData();
         return {
             ...data,
+            tier: this.tier,
+            level: this.levelData.level.current,
             system: {
-                ...this.resources.tokens,
-                ...this.resources.dice,
-                ...this.bonuses,
-                ...this.rules,
-                tier: this.tier,
-                level: this.levelData.level.current
+                token: this.resources.tokens,
+                dice: this.resources.dice,
+                bonuses: this.bonuses,
+                rules: this.rules,
+                levelData: this.levelData
             }
         };
     }

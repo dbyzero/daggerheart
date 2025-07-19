@@ -61,30 +61,28 @@ export default class BeastformSheet extends DHBaseItemSheet {
     }
 
     /**@inheritdoc */
-    async _prepareContext(_options) {
-        const context = await super._prepareContext(_options);
+    async _preparePartContext(partId, context, options) {
+        await super._preparePartContext(partId, context, options);
 
-        const data = { ...context.document.toObject() };
-        context.document = {
-            ...data,
-            system: {
-                ...data.system,
-                features: this.document.system.features
-            }
-        };
-        context.document.effects = this.document.effects.map(effect => {
-            const data = effect.toObject();
-            data.id = effect.id;
-            if (effect.type === 'beastform') data.mandatory = true;
+        switch (partId) {
+            case 'settings':
+                context.advantageOn = JSON.stringify(
+                    Object.keys(context.document.system.advantageOn).map(key => ({
+                        value: key,
+                        name: context.document.system.advantageOn[key].value
+                    }))
+                );
+                break;
+            case 'effects':
+                context.effects.actives = context.effects.actives.map(effect => {
+                    const data = effect.toObject();
+                    data.id = effect.id;
+                    if (effect.type === 'beastform') data.mandatory = true;
 
-            return data;
-        });
-        context.advantageOn = JSON.stringify(
-            Object.keys(context.document.system.advantageOn).map(key => ({
-                value: key,
-                name: context.document.system.advantageOn[key].value
-            }))
-        );
+                    return data;
+                });
+                break;
+        }
 
         return context;
     }

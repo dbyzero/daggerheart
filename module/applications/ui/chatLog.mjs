@@ -211,22 +211,22 @@ export default class DhpChatLog extends foundry.applications.sidebar.tabs.ChatLo
             return ui.notifications.info(game.i18n.localize('DAGGERHEART.UI.Notifications.noTargetsSelected'));
 
         for (let target of targets) {
-            let damages = message.system.damage;
+            let damages = foundry.utils.deepClone(message.system.damage?.roll ?? message.system.roll);
             if (
                 message.system.onSave &&
                 message.system.targets.find(t => t.id === target.id)?.saved?.success === true
             ) {
                 const mod = CONFIG.DH.ACTIONS.damageOnSave[message.system.onSave]?.mod ?? 1;
-                Object.entries(damages).forEach((k, v) => {
-                    let newTotal = 0;
-                    v.forEach(part => {
-                        v.total = Math.ceil(v.total * mod);
-                        newTotal += v.total;
+                Object.entries(damages).forEach(([k, v]) => {
+                    v.total = 0;
+                    v.parts.forEach(part => {
+                        part.total = Math.ceil(part.total * mod);
+                        v.total += part.total;
                     });
                 });
             }
 
-            target.actor.takeDamage(damages.roll);
+            target.actor.takeDamage(damages);
         }
     };
 

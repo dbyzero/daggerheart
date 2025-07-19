@@ -95,7 +95,7 @@ export default class DamageRoll extends DHRoll {
 
     constructFormula(config) {
         this.options.roll.forEach(part => {
-            part.roll = new Roll(part.formula);
+            part.roll = new Roll(Roll.replaceFormulaData(part.formula, config.data));
             this.constructFormulaPart(config, part);
         });
         return this.options.roll;

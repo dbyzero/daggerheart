@@ -217,6 +217,16 @@
                 "requestingSpotlight": "Requesting The Spotlight",
                 "requestSpotlight": "Request The Spotlight"
             },
+            "ContextMenu": {
+                "disableEffect": "Disable Effect",
+                "enableEffect": "Enable Effect",
+                "equip": "Equip",
+                "sendToChat": "Send To Chat",
+                "toLoadout": "Send to Loadout",
+                "toVault": "Send to Vault",
+                "unequip": "Unequip",
+                "useItem": "Use Item"
+            },
             "Countdown": {
                 "addCountdown": "Add Countdown",
                 "FIELDS": {
@@ -1283,7 +1293,7 @@
             "fear": "Fear",
             "features": "Features",
             "healing": "Healing",
-            "hitPoints": {
+            "HitPoints": {
                 "single": "Hit Point",
                 "plural": "Hit Points",
                 "short": "HP"
@@ -1628,6 +1638,8 @@
                 "beastformEquipWeapon": "You cannot use weapons while in a Beastform."
             },
             "Tooltip": {
+                "disableEffect": "Disable Effect",
+                "enableEffect": "Enable Effect",
                 "openItemWorld": "Open Item World",
                 "openActorWorld": "Open Actor World",
                 "sendToChat": "Send to Chat",
@@ -1637,7 +1649,8 @@
                 "sendToVault": "Send to Vault",
                 "sendToLoadout": "Send to Loadout",
                 "makeDeathMove": "Make a Death Move",
-                "rangeAndTarget": "Range & Target"
+                "rangeAndTarget": "Range & Target",
+                "dragApplyEffect": "Drag effect to apply it to an actor"
             }
         }
     }
