@@ -92,7 +92,7 @@ export default class D20Roll extends DHRoll {
 
     configureModifiers() {
         this.applyAdvantage();
-        
+
         this.baseTerms = foundry.utils.deepClone(this.dice);
 
         this.options.roll.modifiers = this.applyBaseBonus();
@@ -140,28 +140,21 @@ export default class D20Roll extends DHRoll {
         return modifiers;
     }
 
-    static async buildEvaluate(roll, config = {}, message = {}) {
-        if (config.evaluate !== false) await roll.evaluate();
-
-        this.postEvaluate(roll, config);
-    }
-
     static postEvaluate(roll, config = {}) {
-        super.postEvaluate(roll, config);
+        const data = super.postEvaluate(roll, config);
         if (config.targets?.length) {
             config.targets.forEach(target => {
                 const difficulty = config.roll.difficulty ?? target.difficulty ?? target.evasion;
                 target.hit = this.isCritical || roll.total >= difficulty;
             });
-        } else if (config.roll.difficulty)
-            config.roll.success = roll.isCritical || roll.total >= config.roll.difficulty;
-        config.roll.advantage = {
+        } else if (config.roll.difficulty) data.success = roll.isCritical || roll.total >= config.roll.difficulty;
+        data.advantage = {
             type: config.roll.advantage,
             dice: roll.dAdvantage?.denomination,
             value: roll.dAdvantage?.total
         };
-        config.roll.isCritical = roll.isCritical;
-        config.roll.extra = roll.dice
+        data.isCritical = roll.isCritical;
+        data.extra = roll.dice
             .filter(d => !roll.baseTerms.includes(d))
             .map(d => {
                 return {
@@ -169,7 +162,8 @@ export default class D20Roll extends DHRoll {
                     value: d.total
                 };
             });
-        config.roll.modifierTotal = this.calculateTotalModifiers(roll);
+        data.modifierTotal = this.calculateTotalModifiers(roll);
+        return data;
     }
 
     resetFormula() {
