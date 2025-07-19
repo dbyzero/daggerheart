@@ -5,7 +5,7 @@
             {{#if isCompanion}}
                 <a class="item-name" data-action="attackRoll">{{item.name}}</a>
             {{else}}
-                <div class="item-name">{{item.name}}</div>
+                <div class="item-name">{{localize item.name}}</div>
             {{/if}}
             {{#if  (eq type 'weapon')}} 
                 <div class="item-tags">
@@ -122,6 +122,16 @@
                     </div>
                     <div class="tag">
                         {{localize (concat 'DAGGERHEART.CONFIG.ActionType.' item.actionType)}}
+                    </div>
+                </div>
+            {{/if}}
+            {{#if  (eq type 'attack')}}
+                <div class="item-tags">
+                    <div class="tag">
+                        {{localize 'DAGGERHEART.GENERAL.unarmed'}}
+                    </div>
+                    <div class="tag">
+                        {{localize 'DAGGERHEART.CONFIG.ActionType.action'}}
                     </div>
                 </div>
             {{/if}}

@@ -329,8 +329,16 @@ export default class DhCharacter extends BaseDataActor {
         return this.parent.effects.find(x => x.type === 'beastform');
     }
 
-    get unarmedIcon() {
-        return this.activeBeastform ? 'icons/creatures/claws/claw-straight-brown.webp' : this.attack.img;
+    get usedUnarmed() {
+        const primaryWeaponEquipped = this.primaryWeapon?.system?.equipped;
+        const secondaryWeaponEquipped = this.secondaryWeapon?.system?.equipped;
+        return !primaryWeaponEquipped && !secondaryWeaponEquipped
+            ? {
+                  ...this.attack,
+                  name: this.activeBeastform ? 'DAGGERHEART.ITEMS.Beastform.attackName' : this.attack.name,
+                  img: this.activeBeastform ? 'icons/creatures/claws/claw-straight-brown.webp' : this.attack.img
+              }
+            : null;
     }
 
     get sheetLists() {

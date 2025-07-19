@@ -1302,6 +1302,7 @@
             "title": "Title",
             "true": "True",
             "type": "Type",
+            "unarmed": "Unarmed",
             "unarmedStrike": "Unarmed Strike",
             "unarmored": "Unarmored",
             "use": "Use",
@@ -1358,10 +1359,11 @@
                         "features": { "label": "Nr Features" }
                     }
                 },
+                "attackName": "Beast Attack",
+                "beastformEffect": "Beastform Transformation",
                 "dialogTitle": "Beastform Selection",
                 "tokenTitle": "Beastform Token",
                 "transform": "Transform",
-                "beastformEffect": "Beastform Transformation",
                 "evolve": "Evolve",
                 "evolvedFeatureTitle": "Evolved",
                 "evolvedDrag": "Drag a form here to evolve it.",
