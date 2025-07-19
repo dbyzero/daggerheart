@@ -1,5 +1,3 @@
-import { rollCommandToJSON } from '../helpers/utils.mjs';
-
 export default function DhDamageEnricher(match, _options) {
     const parts = match[1].split('|').map(x => x.trim());
 
@@ -25,8 +23,7 @@ export default function DhDamageEnricher(match, _options) {
     return getDamageMessage(value, type, match[0]);
 }
 
-export function getDamageMessage(damage, type, defaultElement) {
-    const dualityElement = document.createElement('span');
+function getDamageMessage(damage, type, defaultElement) {
     const typeIcons = type
         .replace('[', '')
         .replace(']', '')
@@ -41,6 +38,7 @@ export function getDamageMessage(damage, type, defaultElement) {
 
     const iconNodes = typeIcons.map(x => `<i class="fa-solid ${x}"></i>`).join('');
 
+    const dualityElement = document.createElement('span');
     dualityElement.innerHTML = `
         <button class="enriched-damage-button" 
             data-value="${damage}"

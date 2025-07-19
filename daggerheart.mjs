@@ -3,7 +3,7 @@ import * as applications from './module/applications/_module.mjs';
 import * as models from './module/data/_module.mjs';
 import * as documents from './module/documents/_module.mjs';
 import RegisterHandlebarsHelpers from './module/helpers/handlebarsHelper.mjs';
-import { enricherConfig } from './module/enrichers/_module.mjs';
+import { enricherConfig, enricherRenderSetup } from './module/enrichers/_module.mjs';
 import { getCommandTarget, rollCommandToJSON } from './module/helpers/utils.mjs';
 import { NarrativeCountdowns } from './module/applications/ui/countdowns.mjs';
 import { DualityRollColor } from './module/data/settings/Appearance.mjs';
@@ -168,45 +168,15 @@ Hooks.on('ready', () => {
 Hooks.once('dicesoniceready', () => {});
 
 Hooks.on('renderChatMessageHTML', (_, element) => {
-    element
-        .querySelectorAll('.enriched-damage-button')
-        .forEach(element => element.addEventListener('click', renderDamageButton));
-
-    element
-        .querySelectorAll('.duality-roll-button')
-        .forEach(element => element.addEventListener('click', renderDualityButton));
-
-    element
-        .querySelectorAll('.measured-template-button')
-        .forEach(element => element.addEventListener('click', renderMeasuredTemplate));
+    enricherRenderSetup(element);
 });
 
 Hooks.on('renderJournalEntryPageProseMirrorSheet', (_, element) => {
-    element
-        .querySelectorAll('.enriched-damage-button')
-        .forEach(element => element.addEventListener('click', renderDamageButton));
-
-    element
-        .querySelectorAll('.duality-roll-button')
-        .forEach(element => element.addEventListener('click', renderDualityButton));
-
-    element
-        .querySelectorAll('.measured-template-button')
-        .forEach(element => element.addEventListener('click', renderMeasuredTemplate));
+    enricherRenderSetup(element);
 });
 
 Hooks.on('renderHandlebarsApplication', (_, element) => {
-    element
-        .querySelectorAll('.enriched-damage-button')
-        .forEach(element => element.addEventListener('click', renderDamageButton));
-
-    element
-        .querySelectorAll('.duality-roll-button')
-        .forEach(element => element.addEventListener('click', renderDualityButton));
-
-    element
-        .querySelectorAll('.measured-template-button')
-        .forEach(element => element.addEventListener('click', renderMeasuredTemplate));
+    enricherRenderSetup(element);
 });
 
 Hooks.on('chatMessage', (_, message) => {

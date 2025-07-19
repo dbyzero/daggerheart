@@ -1590,7 +1590,8 @@
                 "sendToVault": "Send to Vault",
                 "sendToLoadout": "Send to Loadout",
                 "makeDeathMove": "Make a Death Move",
-                "rangeAndTarget": "Range & Target"
+                "rangeAndTarget": "Range & Target",
+                "dragApplyEffect": "Drag effect to apply it to an actor"
             }
         }
     }
