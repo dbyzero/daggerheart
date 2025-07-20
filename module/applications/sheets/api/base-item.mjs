@@ -72,10 +72,10 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
                     secrets: this.item.isOwner
                 });
                 break;
-            case "effects":
-                await this._prepareEffectsContext(context, options)
+            case 'effects':
+                await this._prepareEffectsContext(context, options);
                 break;
-            case "features":
+            case 'features':
                 context.isGM = game.user.isGM;
                 break;
         }
@@ -93,7 +93,7 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
     async _prepareEffectsContext(context, _options) {
         context.effects = {
             actives: [],
-            inactives: [],
+            inactives: []
         };
 
         for (const effect of this.item.effects) {
@@ -113,30 +113,38 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
      * @protected
      */
     static #getFeatureContextOptions() {
-        const options = this._getContextMenuCommonOptions({ usable: true, toChat: true, deletable: false })
-        options.push(
-            {
-                name: 'CONTROLS.CommonDelete',
-                icon: '<i class="fa-solid fa-trash"></i>',
-                callback: async (target) => {
-                    const feature = getDocFromElement(target);
-                    if (!feature) return;
-                    const confirmed = await foundry.applications.api.DialogV2.confirm({
-                        window: {
-                            title: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.title', {
-                                type: game.i18n.localize(`TYPES.Item.feature`),
-                                name: feature.name
-                            })
-                        },
-                        content: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.text', { name: feature.name })
-                    });
-                    if (!confirmed) return;
-                    await this.document.update({
-                        'system.features': this.document.system.toObject().features.filter(uuid => uuid !== feature.uuid)
-                    });
-                },
+        const options = this._getContextMenuCommonOptions({ usable: true, toChat: true, deletable: false });
+        options.push({
+            name: 'CONTROLS.CommonDelete',
+            icon: '<i class="fa-solid fa-trash"></i>',
+            callback: async target => {
+                const feature = getDocFromElement(target);
+                if (!feature) return;
+                const confirmed = await foundry.applications.api.DialogV2.confirm({
+                    window: {
+                        title: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.title', {
+                            type: game.i18n.localize(`TYPES.Item.feature`),
+                            name: feature.name
+                        })
+                    },
+                    content: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.text', {
+                        name: feature.name
+                    })
+                });
+                if (!confirmed) return;
+
+                await feature.update({
+                    system: {
+                        originItemType: null,
+                        originId: null,
+                        subType: null
+                    }
+                });
+                await this.document.update({
+                    'system.features': this.document.system.toObject().features.filter(uuid => uuid !== feature.uuid)
+                });
             }
-        )
+        });
         return options;
     }
 
@@ -153,7 +161,7 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
         const actionIndex = button.closest('[data-index]').dataset.index;
         const action = this.document.system.actions[actionIndex];
 
-        if(!event.shiftKey) {
+        if (!event.shiftKey) {
             const confirmed = await foundry.applications.api.DialogV2.confirm({
                 window: {
                     title: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.title', {
@@ -165,7 +173,6 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
             });
             if (!confirmed) return;
         }
-
 
         await this.document.update({
             'system.actions': this.document.system.actions.filter((_, index) => index !== Number.parseInt(actionIndex))
@@ -182,7 +189,11 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
         const feature = await cls.create({
             type: 'feature',
             name: cls.defaultName({ type: 'feature' }),
-            "system.subType": CONFIG.DH.ITEM.featureSubTypes[type]
+            system: {
+                subType: CONFIG.DH.ITEM.featureSubTypes[type],
+                originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                originId: this.document.uuid
+            }
         });
         await this.document.update({
             'system.features': [...this.document.system.features, feature].map(f => f.uuid)
@@ -196,11 +207,15 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
     static async #deleteFeature(_, target) {
         const feature = getDocFromElement(target);
         if (!feature) return ui.notifications.warn(game.i18n.localize('DAGGERHEART.UI.Notifications.featureIsMissing'));
-        await feature.update({ 'system.subType': null });
+        await feature.update({
+            system: {
+                originItemType: null,
+                originId: null,
+                subType: null
+            }
+        });
         await this.document.update({
-            'system.features': this.document.system.features
-                .map(x => x.uuid)
-                .filter(uuid => uuid !== feature.uuid)
+            'system.features': this.document.system.features.map(x => x.uuid).filter(uuid => uuid !== feature.uuid)
         });
     }
 
@@ -275,6 +290,12 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
 
         const item = await fromUuid(data.uuid);
         if (item?.type === 'feature') {
+            await item.update({
+                system: {
+                    originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                    originId: this.document.uuid
+                }
+            });
             const current = this.document.system.features.map(x => x.uuid);
             await this.document.update({ 'system.features': [...current, item.uuid] });
         }

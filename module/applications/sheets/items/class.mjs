@@ -9,7 +9,7 @@ export default class ClassSheet extends DHBaseItemSheet {
         position: { width: 700 },
         actions: {
             removeItemFromCollection: ClassSheet.#removeItemFromCollection,
-            removeSuggestedItem: ClassSheet.#removeSuggestedItem,
+            removeSuggestedItem: ClassSheet.#removeSuggestedItem
         },
         tagifyConfigs: [
             {
@@ -93,7 +93,13 @@ export default class ClassSheet extends DHBaseItemSheet {
                     return;
                 }
 
-                await item.update({ 'system.subType': CONFIG.DH.ITEM.featureSubTypes.hope });
+                await item.update({
+                    system: {
+                        subType: CONFIG.DH.ITEM.featureSubTypes.hope,
+                        originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                        originId: this.document.uuid
+                    }
+                });
                 await this.document.update({
                     'system.features': [...this.document.system.features.map(x => x.uuid), item.uuid]
                 });
@@ -103,7 +109,13 @@ export default class ClassSheet extends DHBaseItemSheet {
                     return;
                 }
 
-                await item.update({ 'system.subType': CONFIG.DH.ITEM.featureSubTypes.class });
+                await item.update({
+                    system: {
+                        subType: CONFIG.DH.ITEM.featureSubTypes.class,
+                        originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                        originId: this.document.uuid
+                    }
+                });
                 await this.document.update({
                     'system.features': [...this.document.system.features.map(x => x.uuid), item.uuid]
                 });

@@ -136,13 +136,24 @@ export default class BaseDataItem extends foundry.abstract.TypeDataModel {
     }
 
     async _preDelete() {
-        if (!this.actor || this.actor.type !== 'character') return;
-
-        const items = this.actor.items.filter(item => item.system.originId === this.parent.id);
-        if (items.length > 0)
-            await this.actor.deleteEmbeddedDocuments(
-                'Item',
-                items.map(x => x.id)
-            );
+        if (this.originId) {
+            if (this.actor && this.actor.type === 'character') {
+                const items = this.actor.items.filter(item => item.system.originId === this.parent.id);
+                if (items.length > 0)
+                    await this.actor.deleteEmbeddedDocuments(
+                        'Item',
+                        items.map(x => x.id)
+                    );
+            } else {
+                const linkedItem = await foundry.utils.fromUuid(this.originId);
+                if (linkedItem) {
+                    await linkedItem.update({
+                        'system.features': linkedItem.system.features
+                            .filter(x => x.uuid !== this.parent.uuid)
+                            .map(x => x.uuid)
+                    });
+                }
+            }
+        }
     }
 }

@@ -17,7 +17,7 @@
                     <img class="image" src="{{document.system.primaryFeature.img}}" />
                     <span>{{document.system.primaryFeature.name}}</span>
                     <div class="controls">
-                        <a data-action="removeFeature" data-type="primary"><i class="fa-solid fa-trash"></i></a>
+                        <a data-action="deleteFeature" data-item-uuid="{{document.system.primaryFeature.uuid}}"><i class="fa-solid fa-trash"></i></a>
                     </div>
                 </div> 
             {{/if}}
@@ -38,7 +38,7 @@
                     <img class="image" src="{{document.system.secondaryFeature.img}}" />
                     <span>{{document.system.secondaryFeature.name}}</span>
                     <div class="controls">
-                        <a data-action="removeFeature" data-type="secondary"><i class="fa-solid fa-trash"></i></a>
+                        <a data-action="deleteFeature" data-item-uuid="{{document.system.secondaryFeature.uuid}}"><i class="fa-solid fa-trash"></i></a>
                     </div>
                 </div> 
             {{/if}}

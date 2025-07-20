@@ -5,8 +5,7 @@ export default class AncestrySheet extends DHHeritageSheet {
     static DEFAULT_OPTIONS = {
         classes: ['ancestry'],
         actions: {
-            editFeature: AncestrySheet.#editFeature,
-            removeFeature: AncestrySheet.#removeFeature
+            editFeature: AncestrySheet.#editFeature
         },
         dragDrop: [{ dragSelector: null, dropSelector: '.tab.features .drop-section' }]
     };
@@ -37,21 +36,6 @@ export default class AncestrySheet extends DHHeritageSheet {
         feature.sheet.render(true);
     }
 
-    /**
-     * Remove a feature from the item.
-     * @type {ApplicationClickAction}
-     */
-    static async #removeFeature(event, button) {
-        event.stopPropagation();
-        const target = button.closest('.feature-item');
-        const feature = this.document.system[`${target.dataset.type}Feature`];
-
-        if (feature) await feature.update({ 'system.subType': null });
-        await this.document.update({
-            'system.features': this.document.system.features.filter(x => x && x.uuid !== feature.uuid).map(x => x.uuid)
-        });
-    }
-
     /* -------------------------------------------- */
     /*  Application Drag/Drop                       */
     /* -------------------------------------------- */
@@ -73,7 +57,14 @@ export default class AncestrySheet extends DHHeritageSheet {
                 return;
             }
 
-            await item.update({ 'system.subType': subType });
+            await item.update({
+                system: {
+                    subType: subType,
+                    originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                    originId: this.document.uuid
+                }
+            });
+
             await this.document.update({
                 'system.features': [...this.document.system.features.map(x => x.uuid), item.uuid]
             });

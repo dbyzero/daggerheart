@@ -26,14 +26,14 @@ Parameters:
   <legend>
     {{localize title}}
     {{#if canCreate}}
-    <a data-action="createDoc" data-document-class="{{ifThen (eq type 'effect') 'ActiveEffect' 'Item' }}"
-      data-type="{{ifThen (eq type 'effect') 'base' type}}"
-      {{#if inVault}}data-in-vault="{{inVault}}"{{/if}}
-      {{#if disabled}} data-disabled="{{disabled}}"{{/if}}
-      data-tooltip="{{localize 'DOCUMENT.Create' type=''}}"
-      >
-      <i class="fa-solid fa-plus icon-button"></i>
-    </a>
+      <a data-action="createDoc" data-document-class="{{ifThen (eq type 'effect') 'ActiveEffect' 'Item' }}"
+        data-type="{{ifThen (eq type 'effect') 'base' type}}"
+        {{#if inVault}}data-in-vault="{{inVault}}"{{/if}}
+        {{#if disabled}} data-disabled="{{disabled}}"{{/if}}
+        data-tooltip="{{localize 'DOCUMENT.Create' type=''}}"
+        >
+        <i class="fa-solid fa-plus icon-button"></i>
+      </a>
     {{/if }}
   </legend>
   {{#if (and cardView (eq type 'domainCard'))}}

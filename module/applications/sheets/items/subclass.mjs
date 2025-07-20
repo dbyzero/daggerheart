@@ -68,7 +68,13 @@ export default class SubclassSheet extends DHBaseItemSheet {
                     return;
                 }
 
-                await item.update({ 'system.subType': CONFIG.DH.ITEM.featureSubTypes.foundation });
+                await item.update({
+                    system: {
+                        subType: CONFIG.DH.ITEM.featureSubTypes.foundation,
+                        originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                        originId: this.document.uuid
+                    }
+                });
                 await this.document.update({
                     'system.features': [...this.document.system.features.map(x => x.uuid), item.uuid]
                 });
@@ -78,7 +84,13 @@ export default class SubclassSheet extends DHBaseItemSheet {
                     return;
                 }
 
-                await item.update({ 'system.subType': CONFIG.DH.ITEM.featureSubTypes.specialization });
+                await item.update({
+                    system: {
+                        subType: CONFIG.DH.ITEM.featureSubTypes.specialization,
+                        originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                        originId: this.document.uuid
+                    }
+                });
                 await this.document.update({
                     'system.features': [...this.document.system.features.map(x => x.uuid), item.uuid]
                 });
@@ -88,7 +100,13 @@ export default class SubclassSheet extends DHBaseItemSheet {
                     return;
                 }
 
-                await item.update({ 'system.subType': CONFIG.DH.ITEM.featureSubTypes.mastery });
+                await item.update({
+                    system: {
+                        subType: CONFIG.DH.ITEM.featureSubTypes.mastery,
+                        originItemType: CONFIG.DH.ITEM.featureTypes[this.document.type].id,
+                        originId: this.document.uuid
+                    }
+                });
                 await this.document.update({
                     'system.features': [...this.document.system.features.map(x => x.uuid), item.uuid]
                 });
