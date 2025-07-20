@@ -27,13 +27,15 @@ export function getDualityMessage(roll) {
             data-title="${label}"
             data-label="${dataLabel}"
             data-hope="${roll.hope ?? 'd12'}" 
-            data-fear="${roll.fear ?? 'd12'}" 
+            data-fear="${roll.fear ?? 'd12'}"
+            ${roll.difficulty ? `data-difficulty="${roll.difficulty}"` : ''}
             ${roll.trait && abilities[roll.trait] ? `data-trait="${roll.trait}"` : ''}
             ${roll.advantage ? 'data-advantage="true"' : ''}
             ${roll.disadvantage ? 'data-disadvantage="true"' : ''}
         >
             <i class="fa-solid fa-circle-half-stroke"></i>
             ${label}
+            ${roll.difficulty ? `(${roll.difficulty})` : ''}
         </button>
     `;
 
@@ -43,7 +45,8 @@ export function getDualityMessage(roll) {
 export const renderDualityButton = async event => {
     const button = event.currentTarget,
         traitValue = button.dataset.trait?.toLowerCase(),
-        target = getCommandTarget();
+        target = getCommandTarget(),
+        difficulty = button.dataset.difficulty;
     if (!target) return;
 
     const config = {
@@ -52,6 +55,7 @@ export const renderDualityButton = async event => {
         roll: {
             modifier: traitValue ? target.system.traits[traitValue].value : null,
             label: button.dataset.label,
+            difficulty: difficulty,
             type: button.dataset.actionType ?? null // Need check
         },
         chatMessage: {
