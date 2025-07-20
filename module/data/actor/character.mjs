@@ -523,14 +523,7 @@ export default class DhCharacter extends BaseDataActor {
         return {
             ...data,
             tier: this.tier,
-            level: this.levelData.level.current,
-            system: {
-                token: this.resources.tokens,
-                dice: this.resources.dice,
-                bonuses: this.bonuses,
-                rules: this.rules,
-                levelData: this.levelData
-            }
+            level: this.levelData.level.current
         };
     }
 
