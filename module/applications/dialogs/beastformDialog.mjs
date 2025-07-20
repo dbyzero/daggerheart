@@ -16,7 +16,7 @@ export default class BeastformDialog extends HandlebarsApplicationMixin(Applicat
         tag: 'form',
         classes: ['daggerheart', 'views', 'dh-style', 'beastform-selection'],
         position: {
-            width: 'auto',
+            width: 600,
             height: 'auto'
         },
         actions: {
@@ -39,10 +39,26 @@ export default class BeastformDialog extends HandlebarsApplicationMixin(Applicat
 
     /** @override */
     static PARTS = {
-        beastform: {
-            template: 'systems/daggerheart/templates/dialogs/beastform/beastformDialog.hbs'
+        tabs: { template: 'systems/daggerheart/templates/dialogs/beastform/tabs.hbs' },
+        beastformTier: { template: 'systems/daggerheart/templates/dialogs/beastform/beastformTier.hbs' },
+        advanced: { template: 'systems/daggerheart/templates/dialogs/beastform/advanced.hbs' },
+        footer: { template: 'systems/daggerheart/templates/dialogs/beastform/footer.hbs' }
+    };
+
+    /** @inheritdoc */
+    static TABS = {
+        primary: {
+            tabs: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }],
+            initial: '1',
+            labelPrefix: 'DAGGERHEART.GENERAL.Tiers'
         }
     };
+
+    changeTab(tab, group, options) {
+        super.changeTab(tab, group, options);
+
+        this.render();
+    }
 
     _createDragDropHandlers() {
         return this.options.dragDrop.map(d => {
@@ -101,7 +117,7 @@ export default class BeastformDialog extends HandlebarsApplicationMixin(Applicat
         );
 
         const compendiumBeastforms = await game.packs.get(`daggerheart.beastforms`)?.getDocuments();
-        context.beastformTiers = [...(compendiumBeastforms ? compendiumBeastforms : []), ...game.items].reduce(
+        const beastformTiers = [...(compendiumBeastforms ? compendiumBeastforms : []), ...game.items].reduce(
             (acc, x) => {
                 const tier = CONFIG.DH.GENERAL.tiers[x.system.tier];
                 if (x.type !== 'beastform' || tier.id > this.configData.tierLimit) return acc;
@@ -121,6 +137,9 @@ export default class BeastformDialog extends HandlebarsApplicationMixin(Applicat
             },
             {}
         );
+
+        context.tier = beastformTiers[this.tabGroups.primary];
+        context.tierKey = this.tabGroups.primary;
 
         context.canSubmit = this.canSubmit();
 
@@ -170,12 +189,6 @@ export default class BeastformDialog extends HandlebarsApplicationMixin(Applicat
 
         const uuid = this.selected?.uuid === target.dataset.uuid ? null : target.dataset.uuid;
         this.selected = uuid ? await foundry.utils.fromUuid(uuid) : null;
-
-        if (this.selected && this.selected.system.beastformType !== CONFIG.DH.ITEM.beastformTypes.normal.id) {
-            this.element.querySelector('.advanced-container').classList.add('expanded');
-        } else {
-            this.element.querySelector('.advanced-container').classList.remove('expanded');
-        }
 
         if (this.selected) {
             if (this.selected.system.beastformType !== 'evolved') this.evolved.form = null;
