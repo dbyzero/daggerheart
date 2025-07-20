@@ -164,7 +164,7 @@ export default class DHBaseAction extends foundry.abstract.DataModel {
 
     getRollData(data = {}) {
         if (!this.actor) return null;
-        const actorData = this.actor.system.getRollData(false);
+        const actorData = this.actor.getRollData(false);
 
         // Add Roll results to RollDatas
         actorData.result = data.roll?.total ?? 1;
