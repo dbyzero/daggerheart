@@ -336,7 +336,8 @@ export default class DhCharacter extends BaseDataActor {
                   ...this.attack,
                   id: this.attack.id,
                   name: this.activeBeastform ? 'DAGGERHEART.ITEMS.Beastform.attackName' : this.attack.name,
-                  img: this.activeBeastform ? 'icons/creatures/claws/claw-straight-brown.webp' : this.attack.img
+                  img: this.activeBeastform ? 'icons/creatures/claws/claw-straight-brown.webp' : this.attack.img,
+                  actor: this.parent
               }
             : null;
     }
