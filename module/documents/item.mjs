@@ -1,3 +1,5 @@
+import ActionSelectionDialog from '../applications/dialogs/actionSelectionDialog.mjs';
+
 /**
  * Override and extend the basic Item implementation.
  * @extends {foundry.documents.Item}
@@ -7,6 +9,23 @@ export default class DHItem extends foundry.documents.Item {
     prepareEmbeddedDocuments() {
         super.prepareEmbeddedDocuments();
         for (const action of this.system.actions ?? []) action.prepareData();
+    }
+
+    /** @inheritDoc */
+    getEmbeddedDocument(embeddedName, id, options) {
+        let doc;
+        switch (embeddedName) {
+            case 'Action':
+                doc = this.system.actions?.get(id);
+                if (!doc && this.system.attack?.id === id) doc = this.system.attack;
+                break;
+            default:
+                return super.getEmbeddedDocument(embeddedName, id, options);
+        }
+        if (options?.strict && !doc) {
+            throw new Error(`The key ${id} does not exist in the ${embeddedName} Collection`);
+        }
+        return doc;
     }
 
     /**
@@ -77,46 +96,16 @@ export default class DHItem extends foundry.documents.Item {
         });
     }
 
-    async selectActionDialog(prevEvent) {
-        const content = await foundry.applications.handlebars.renderTemplate(
-                'systems/daggerheart/templates/dialogs/actionSelect.hbs',
-                {
-                    actions: this.system.actionsList,
-                    itemName: this.name
-                }
-            ),
-            title = game.i18n.localize('DAGGERHEART.CONFIG.SelectAction.selectAction');
-
-        return foundry.applications.api.DialogV2.prompt({
-            window: { title },
-            classes: ['daggerheart', 'dh-style'],
-            content,
-            ok: {
-                label: title,
-                callback: (event, button, dialog) => {
-                    Object.defineProperty(prevEvent, 'shiftKey', {
-                        get() {
-                            return event.shiftKey;
-                        }
-                    });
-                    return this.system.actionsList.find(a => a._id === button.form.elements.actionId.value);
-                }
-            }
-        });
-    }
-
     async use(event) {
-        const actions = this.system.actionsList;
-        if (actions?.length) {
-            let action = actions[0];
-            if (actions.length > 1 && !event?.shiftKey) {
+        const actions = new Set(this.system.actionsList);
+        if (actions?.size) {
+            let action = actions.first();
+            if (actions.size > 1 && !event?.shiftKey) {
                 // Actions Choice Dialog
-                action = await this.selectActionDialog(event);
+                action = await ActionSelectionDialog.create(this, event);
             }
             if (action) return action.use(event);
         }
-
-        return this.toChat();
     }
 
     async toChat(origin) {

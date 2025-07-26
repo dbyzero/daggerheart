@@ -1,7 +1,7 @@
 import DHBaseAction from './baseAction.mjs';
 
 export default class DHHealingAction extends DHBaseAction {
-    static extraSchemas = ['target', 'effects', 'healing', 'roll'];
+    static extraSchemas = [...super.extraSchemas, 'target', 'effects', 'healing', 'roll'];
 
     static getRollType(parent) {
         return 'spellcast';
@@ -16,17 +16,19 @@ export default class DHHealingAction extends DHBaseAction {
 
     async rollHealing(event, data) {
         const systemData = data.system ?? data;
-        let formulas = [{
-            formula: this.getFormulaValue(data).getFormula(this.actor),
-            applyTo: this.healing.applyTo
-        }];
-        
+        let formulas = [
+            {
+                formula: this.getFormulaValue(data).getFormula(this.actor),
+                applyTo: this.healing.applyTo
+            }
+        ];
+
         const config = {
             title: game.i18n.format('DAGGERHEART.UI.Chat.healingRoll.title', {
                 healing: game.i18n.localize(CONFIG.DH.GENERAL.healingTypes[this.healing.applyTo].label)
             }),
             roll: formulas,
-            targets: (data.system?.targets ?? data.targets).filter(t => t.hit),
+            targets: systemData.targets?.filter(t => t.hit),
             messageType: 'healing',
             source: systemData.source,
             data: this.getRollData(),

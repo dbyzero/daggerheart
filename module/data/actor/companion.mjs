@@ -1,7 +1,7 @@
 import BaseDataActor from './base.mjs';
 import DhLevelData from '../levelData.mjs';
 import ForeignDocumentUUIDField from '../fields/foreignDocumentUUIDField.mjs';
-import ActionField from '../fields/actionField.mjs';
+import { ActionField, ActionsField } from '../fields/actionField.mjs';
 import { adjustDice, adjustRange } from '../../helpers/utils.mjs';
 import DHCompanionSettings from '../../applications/sheets-configs/companion-settings.mjs';
 import { resourceField, bonusField } from '../fields/actorField.mjs';
@@ -53,6 +53,7 @@ export default class DhCompanion extends BaseDataActor {
                     img: 'icons/creatures/claws/claw-bear-paw-swipe-brown.webp',
                     _id: foundry.utils.randomID(),
                     systemPath: 'attack',
+                    chatDisplay: false,
                     type: 'attack',
                     range: 'melee',
                     target: {
@@ -76,7 +77,6 @@ export default class DhCompanion extends BaseDataActor {
                     }
                 }
             }),
-            actions: new fields.ArrayField(new ActionField()),
             levelData: new fields.EmbeddedDataField(DhLevelData),
             bonuses: new fields.SchemaField({
                 damage: new fields.SchemaField({

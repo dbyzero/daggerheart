@@ -1,5 +1,5 @@
 import DHAdversarySettings from '../../applications/sheets-configs/adversary-settings.mjs';
-import ActionField from '../fields/actionField.mjs';
+import { ActionField } from '../fields/actionField.mjs';
 import BaseDataActor from './base.mjs';
 import { resourceField, bonusField } from '../fields/actorField.mjs';
 
@@ -18,10 +18,11 @@ export default class DhpAdversary extends BaseDataActor {
         const fields = foundry.data.fields;
         return {
             ...super.defineSchema(),
-            tier: new fields.StringField({
+            tier: new fields.NumberField({
                 required: true,
+                integer: true,
                 choices: CONFIG.DH.GENERAL.tiers,
-                initial: CONFIG.DH.GENERAL.tiers.tier1.id
+                initial: CONFIG.DH.GENERAL.tiers[1].id
             }),
             type: new fields.StringField({
                 required: true,
@@ -52,7 +53,7 @@ export default class DhpAdversary extends BaseDataActor {
                 })
             }),
             resources: new fields.SchemaField({
-                hitPoints: resourceField(0, 'DAGGERHEART.GENERAL.hitPoints.plural', true),
+                hitPoints: resourceField(0, 'DAGGERHEART.GENERAL.HitPoints.plural', true),
                 stress: resourceField(0, 'DAGGERHEART.GENERAL.stress', true)
             }),
             attack: new ActionField({
@@ -61,6 +62,7 @@ export default class DhpAdversary extends BaseDataActor {
                     img: 'icons/skills/melee/blood-slash-foam-red.webp',
                     _id: foundry.utils.randomID(),
                     systemPath: 'attack',
+                    chatDisplay: false,
                     type: 'attack',
                     range: 'melee',
                     target: {

@@ -205,7 +205,11 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
 
     _getSetupTabs(tabs) {
         for (const v of Object.values(tabs)) {
-            v.active = this.tabGroups[v.group] ? this.tabGroups[v.group] === v.id : v.active;
+            v.active = this.tabGroups[v.group]
+                ? this.tabGroups[v.group] === v.id
+                : this.tabGroups.primary !== 'equipment'
+                  ? v.active
+                  : false;
             v.cssClass = v.active ? 'active' : '';
 
             switch (v.id) {
@@ -242,6 +246,16 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
                     marker.classList.remove('active');
                 }
             }
+
+            if (tab === 'equipment') {
+                this.tabGroups.setup = null;
+                this.element.querySelector('section[data-group="setup"].active')?.classList?.remove?.('active');
+            } else {
+                this.tabGroups.setup = 'domainCards';
+                this.element
+                    .querySelector('section[data-group="setup"][data-tab="domainCards"]')
+                    ?.classList?.add?.('active');
+            }
         }
     }
 
@@ -256,6 +270,11 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
         });
     }
 
+    async _preFirstRender(_context, _options) {
+        this.tabGroups.primary = 'setup';
+        this.tabGroups.setup = 'ancestry';
+    }
+
     async _prepareContext(_options) {
         const context = await super._prepareContext(_options);
         context.tabs = this._getTabs(this.constructor.TABS);
@@ -266,7 +285,7 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
     async _preparePartContext(partId, context) {
         switch (partId) {
             case 'footer':
-                context.isLastTab = this.tabGroups.setup === 'domainCards';
+                context.isLastTab = this.tabGroups.setup === 'domainCards' || this.tabGroups.primary !== 'setup';
                 switch (this.tabGroups.setup) {
                     case null:
                     case 'ancestry':
@@ -321,10 +340,7 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
                     })
                 };
                 context.traits.nrTotal = Object.keys(context.traits.values).length;
-                context.traits.nrSelected = Object.values(context.traits.values).reduce(
-                    (acc, trait) => acc + (trait.value !== null ? 1 : 0),
-                    0
-                );
+                context.traits.nrSelected = this.getNrSelectedTrait();
 
                 context.experience = {
                     values: this.setup.experiences,
@@ -378,6 +394,10 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
                     choiceA: { suggestions: suggestions.inventory.choiceA, compendium: 'consumables' },
                     choiceB: { suggestions: suggestions.inventory.choiceB, compendium: 'general-items' }
                 };
+                context.noInventoryChoices =
+                    suggestions.inventory.take.length === 0 &&
+                    suggestions.inventory.choiceA?.length === 0 &&
+                    suggestions.inventory.choiceB?.length === 0;
 
                 break;
         }
@@ -408,7 +428,7 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
             case 5:
                 return Object.values(this.setup.experiences).every(x => x.name) ? 6 : 5;
             case 4:
-                return Object.values(this.setup.traits).every(x => x.value !== null) ? 5 : 4;
+                return this.getNrSelectedTrait() === 6 ? 5 : 4;
             case 3:
                 return this.setup.class.uuid && this.setup.subclass.uuid ? 4 : 3;
             case 2:
@@ -416,6 +436,18 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
             case 1:
                 return this.setup.primaryAncestry.uuid ? 2 : 1;
         }
+    }
+
+    getNrSelectedTrait() {
+        const traitCompareArray = [
+            ...game.settings.get(CONFIG.DH.id, CONFIG.DH.SETTINGS.gameSettings.Homebrew).traitArray
+        ];
+        return Object.values(this.setup.traits).reduce((acc, x) => {
+            const index = traitCompareArray.indexOf(x.value);
+            traitCompareArray.splice(index, 1);
+            acc += index !== -1;
+            return acc;
+        }, 0);
     }
 
     async getEquipmentSuggestions(choiceA, choiceB) {
@@ -429,10 +461,15 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
                 ? { ...characterGuide.suggestedSecondaryWeapon, uuid: characterGuide.suggestedSecondaryWeapon.uuid }
                 : null,
             inventory: {
-                take: inventory.take ?? [],
+                take: inventory.take?.filter(x => x) ?? [],
                 choiceA:
-                    inventory.choiceA?.map(x => ({ ...x, uuid: x.uuid, selected: x.uuid === choiceA?.uuid })) ?? [],
-                choiceB: inventory.choiceB?.map(x => ({ ...x, uuid: x.uuid, selected: x.uuid === choiceB?.uuid })) ?? []
+                    inventory.choiceA
+                        ?.filter(x => x)
+                        .map(x => ({ ...x, uuid: x.uuid, selected: x.uuid === choiceA?.uuid })) ?? [],
+                choiceB:
+                    inventory.choiceB
+                        ?.filter(x => x)
+                        .map(x => ({ ...x, uuid: x.uuid, selected: x.uuid === choiceB?.uuid })) ?? []
             }
         };
     }
@@ -506,7 +543,10 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
             name: this.setup.ancestryName ?? this.setup.primaryAncestry.name,
             system: {
                 ...this.setup.primaryAncestry.system,
-                features: [primaryAncestryFeature.uuid, secondaryAncestryFeature.uuid]
+                features: [
+                    { type: 'primary', item: primaryAncestryFeature.uuid },
+                    { type: 'secondary', item: secondaryAncestryFeature.uuid }
+                ]
             }
         };
 
@@ -535,7 +575,10 @@ export default class DhCharacterCreation extends HandlebarsApplicationMixin(Appl
             await this.character.createEmbeddedDocuments('Item', [this.equipment.inventory.choiceA]);
         if (this.equipment.inventory.choiceB.uuid)
             await this.character.createEmbeddedDocuments('Item', [this.equipment.inventory.choiceB]);
-        await this.character.createEmbeddedDocuments('Item', this.setup.class.system.inventory.take);
+        await this.character.createEmbeddedDocuments(
+            'Item',
+            this.setup.class.system.inventory.take.filter(x => x)
+        );
 
         await this.character.update({
             system: {

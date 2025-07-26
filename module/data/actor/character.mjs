@@ -3,6 +3,7 @@ import ForeignDocumentUUIDField from '../fields/foreignDocumentUUIDField.mjs';
 import DhLevelData from '../levelData.mjs';
 import BaseDataActor from './base.mjs';
 import { attributeField, resourceField, stressDamageReductionRule, bonusField } from '../fields/actorField.mjs';
+import { ActionField } from '../fields/actionField.mjs';
 
 export default class DhCharacter extends BaseDataActor {
     static LOCALIZATION_PREFIXES = ['DAGGERHEART.ACTORS.Character'];
@@ -21,7 +22,7 @@ export default class DhCharacter extends BaseDataActor {
         return {
             ...super.defineSchema(),
             resources: new fields.SchemaField({
-                hitPoints: resourceField(0, 'DAGGERHEART.GENERAL.hitPoints.plural', true),
+                hitPoints: resourceField(0, 'DAGGERHEART.GENERAL.HitPoints.plural', true),
                 stress: resourceField(6, 'DAGGERHEART.GENERAL.stress', true),
                 hope: resourceField(6, 'DAGGERHEART.GENERAL.hope')
             }),
@@ -87,8 +88,46 @@ export default class DhCharacter extends BaseDataActor {
                 value: new ForeignDocumentUUIDField({ type: 'Item', nullable: true }),
                 subclass: new ForeignDocumentUUIDField({ type: 'Item', nullable: true })
             }),
-            advantageSources: new fields.ArrayField(new fields.StringField()),
-            disadvantageSources: new fields.ArrayField(new fields.StringField()),
+            attack: new ActionField({
+                initial: {
+                    name: 'Attack',
+                    img: 'icons/skills/melee/unarmed-punch-fist-yellow-red.webp',
+                    _id: foundry.utils.randomID(),
+                    systemPath: 'attack',
+                    chatDisplay: false,
+                    type: 'attack',
+                    range: 'melee',
+                    target: {
+                        type: 'any',
+                        amount: 1
+                    },
+                    roll: {
+                        type: 'attack',
+                        trait: 'strength'
+                    },
+                    damage: {
+                        parts: [
+                            {
+                                type: ['physical'],
+                                value: {
+                                    custom: {
+                                        enabled: true,
+                                        formula: '@system.rules.attack.damage.value'
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }),
+            advantageSources: new fields.ArrayField(new fields.StringField(), {
+                label: 'DAGGERHEART.ACTORS.Character.advantageSources.label',
+                hint: 'DAGGERHEART.ACTORS.Character.advantageSources.hint'
+            }),
+            disadvantageSources: new fields.ArrayField(new fields.StringField(), {
+                label: 'DAGGERHEART.ACTORS.Character.disadvantageSources.label',
+                hint: 'DAGGERHEART.ACTORS.Character.disadvantageSources.hint'
+            }),
             levelData: new fields.EmbeddedDataField(DhLevelData),
             bonuses: new fields.SchemaField({
                 roll: new fields.SchemaField({
@@ -164,6 +203,11 @@ export default class DhCharacter extends BaseDataActor {
                             hint: 'DAGGERHEART.GENERAL.Bonuses.rest.longRest.longRestMoves.hint'
                         })
                     })
+                }),
+                maxLoadout : new fields.NumberField({
+                    integer: true,
+                    initial: 0,
+                    label: 'DAGGERHEART.GENERAL.Bonuses.maxLoadout.label'
                 })
             }),
             companion: new ForeignDocumentUUIDField({ type: 'Actor', nullable: true, initial: null }),
@@ -198,6 +242,15 @@ export default class DhCharacter extends BaseDataActor {
                     magical: new fields.BooleanField({ initial: false }),
                     physical: new fields.BooleanField({ initial: false })
                 }),
+                attack: new fields.SchemaField({
+                    damage: new fields.SchemaField({
+                        value: new fields.StringField({
+                            required: true,
+                            initial: '@profd4',
+                            label: 'DAGGERHEART.GENERAL.Rules.attack.damage.value.label'
+                        })
+                    })
+                }),
                 weapon: new fields.SchemaField({
                     /*  Unimplemented 
                         -> Should remove the lowest damage dice from weapon damage 
@@ -216,7 +269,8 @@ export default class DhCharacter extends BaseDataActor {
     }
 
     get tier() {
-        return this.levelData.level.current === 1
+        const currentLevel = this.levelData.level.current;
+        return currentLevel === 1
             ? 1
             : Object.values(game.settings.get(CONFIG.DH.id, CONFIG.DH.SETTINGS.gameSettings.LevelTiers).tiers).find(
                   tier => currentLevel >= tier.levels.start && currentLevel <= tier.levels.end
@@ -273,8 +327,38 @@ export default class DhCharacter extends BaseDataActor {
         };
     }
 
+    get loadoutSlot() {
+        const loadoutCount = this.domainCards.loadout?.length ?? 0,
+            max = game.settings.get(CONFIG.DH.id, CONFIG.DH.SETTINGS.gameSettings.Homebrew).maxLoadout + this.bonuses.maxLoadout;
+
+        return {
+            current: loadoutCount,
+            available: Math.max(max - loadoutCount, 0),
+            max
+        }
+    }
+
     get armor() {
         return this.parent.items.find(x => x.type === 'armor' && x.system.equipped);
+    }
+
+    get activeBeastform() {
+        return this.parent.effects.find(x => x.type === 'beastform');
+    }
+
+    get usedUnarmed() {
+        const primaryWeaponEquipped = this.primaryWeapon?.system?.equipped;
+        const secondaryWeaponEquipped = this.secondaryWeapon?.system?.equipped;
+        return !primaryWeaponEquipped && !secondaryWeaponEquipped
+            ? {
+                  ...this.attack,
+                  uuid: this.attack.uuid,
+                  id: this.attack.id,
+                  name: this.activeBeastform ? 'DAGGERHEART.ITEMS.Beastform.attackName' : this.attack.name,
+                  img: this.activeBeastform ? 'icons/creatures/claws/claw-straight-brown.webp' : this.attack.img,
+                  actor: this.parent
+              }
+            : null;
     }
 
     get sheetLists() {
@@ -457,9 +541,6 @@ export default class DhCharacter extends BaseDataActor {
         const data = super.getRollData();
         return {
             ...data,
-            ...this.resources.tokens,
-            ...this.resources.dice,
-            ...this.bonuses,
             tier: this.tier,
             level: this.levelData.level.current
         };

@@ -21,13 +21,8 @@
             width: 80px;
         }
 
-        .downtime-refresh-container {
-            margin-top: @fullMargin;
+        .action-use-button {
             width: 100%;
-
-            .refresh-title {
-                font-weight: bold;
-            }
         }
     }
 
@@ -49,7 +44,46 @@
                 &.duality {
                     display: flex;
                     gap: 0.25rem;
+
+                    > .roll {
+                        background-image: none;
+
+                        .reroll-button {
+                            border: none;
+                            background: initial;
+                            width: 42px;
+
+                            &:hover {
+                                background: var(--button-background-color);
+                                border: 1px solid var(--button-border-color);
+                            }
+                        }
+                    }
                 }
+
+                &.rerollable {
+                    position: relative;
+                    flex: none;
+
+                    .dice-rerolled {
+                        z-index: 2;
+                        position: absolute;
+                        right: 0;
+                        font-size: 12px;
+                        cursor: help;
+                    }
+
+                    .reroll-button {
+                        border: none;
+                        background: initial;
+
+                        &:hover {
+                            background: var(--button-background-color);
+                            border: 1px solid var(--button-border-color);
+                        }
+                    }
+                }
+
                 // margin: 0;
                 > .roll {
                     display: flex;
@@ -57,14 +91,24 @@
                     justify-content: center;
                     gap: 4px;
                     margin-bottom: 4px;
+
                     .dice-container {
                         display: flex;
                         flex-direction: column;
                         gap: 2px;
+                        position: relative;
 
                         .dice-title {
                             color: var(--color-light-1);
                             text-shadow: 0 0 1px black;
+                        }
+
+                        .dice-rerolled {
+                            z-index: 2;
+                            position: absolute;
+                            right: -2px;
+                            font-size: 12px;
+                            cursor: help;
                         }
 
                         .dice-inner-container {
@@ -365,6 +409,7 @@
             width: 80px;
         }
     }
+
     button {
         &.inner-button {
             --button-size: 1.25rem;

@@ -1,6 +1,8 @@
 import BaseDataItem from './base.mjs';
 import ForeignDocumentUUIDField from '../fields/foreignDocumentUUIDField.mjs';
 import ForeignDocumentUUIDArrayField from '../fields/foreignDocumentUUIDArrayField.mjs';
+import ItemLinkFields from '../fields/itemLinkFields.mjs';
+import { addLinkedItemsDiff, updateLinkedItemApps } from '../../helpers/utils.mjs';
 
 export default class DHClass extends BaseDataItem {
     /** @inheritDoc */
@@ -24,10 +26,10 @@ export default class DHClass extends BaseDataItem {
                 integer: true,
                 min: 1,
                 initial: 5,
-                label: 'DAGGERHEART.GENERAL.hitPoints.plural'
+                label: 'DAGGERHEART.GENERAL.HitPoints.plural'
             }),
             evasion: new fields.NumberField({ initial: 0, integer: true, label: 'DAGGERHEART.GENERAL.evasion' }),
-            features: new ForeignDocumentUUIDArrayField({ type: 'Item' }),
+            features: new ItemLinkFields(),
             subclasses: new ForeignDocumentUUIDArrayField({ type: 'Item', required: false }),
             inventory: new fields.SchemaField({
                 take: new ForeignDocumentUUIDArrayField({ type: 'Item', required: false }),
@@ -52,17 +54,11 @@ export default class DHClass extends BaseDataItem {
     }
 
     get hopeFeatures() {
-        return (
-            this.features.filter(x => x?.system?.subType === CONFIG.DH.ITEM.featureSubTypes.hope) ??
-            (this.features.filter(x => !x).length > 0 ? {} : null)
-        );
+        return this.features.filter(x => x.type === CONFIG.DH.ITEM.featureSubTypes.hope).map(x => x.item);
     }
 
     get classFeatures() {
-        return (
-            this.features.filter(x => x?.system?.subType === CONFIG.DH.ITEM.featureSubTypes.class) ??
-            (this.features.filter(x => !x).length > 0 ? {} : null)
-        );
+        return this.features.filter(x => x.type === CONFIG.DH.ITEM.featureSubTypes.class).map(x => x.item);
     }
 
     async _preCreate(data, options, user) {
@@ -80,6 +76,9 @@ export default class DHClass extends BaseDataItem {
 
     _onCreate(data, options, userId) {
         super._onCreate(data, options, userId);
+
+        if (userId !== game.user.id) return;
+
         if (options.parent?.type === 'character') {
             const path = `system.${data.system.isMulticlass ? 'multiclass.value' : 'class.value'}`;
             options.parent.update({ [path]: `${options.parent.uuid}.Item.${data._id}` });
@@ -97,5 +96,34 @@ export default class DHClass extends BaseDataItem {
 
             foundry.utils.getProperty(options.parent, `${path}.subclass`)?.delete();
         }
+    }
+
+    async _preUpdate(changed, options, userId) {
+        const allowed = await super._preUpdate(changed, options, userId);
+        if (allowed === false) return false;
+
+        const paths = [
+            'subclasses',
+            'characterGuide.suggestedPrimaryWeapon',
+            'characterGuide.suggestedSecondaryWeapon',
+            'characterGuide.suggestedArmor',
+            'inventory.take',
+            'inventory.choiceA',
+            'inventory.choiceB'
+        ];
+
+        for (let path of paths) {
+            const currentItems = [].concat(foundry.utils.getProperty(this, path) ?? []);
+            const changedItems = [].concat(foundry.utils.getProperty(changed, `system.${path}`) ?? []);
+            if (!changedItems.length) continue;
+
+            addLinkedItemsDiff(changedItems, currentItems, options);
+        }
+    }
+
+    _onUpdate(changed, options, userId) {
+        super._onUpdate(changed, options, userId);
+
+        updateLinkedItemApps(options, this.parent.sheet);
     }
 }

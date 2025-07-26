@@ -1,78 +1,8 @@
 import { diceTypes, getDiceSoNicePresets, range } from '../config/generalConfig.mjs';
 import Tagify from '@yaireo/tagify';
 
-export const loadCompendiumOptions = async compendiums => {
-    const compendiumValues = [];
-
-    for (var compendium of compendiums) {
-        const values = await getCompendiumOptions(compendium);
-        compendiumValues.push(values);
-    }
-
-    return compendiumValues;
-};
-
-const getCompendiumOptions = async compendium => {
-    const compendiumPack = await game.packs.get(compendium);
-
-    const values = [];
-    for (var value of compendiumPack.index) {
-        const document = await compendiumPack.getDocument(value._id);
-        values.push(document);
-    }
-
-    return values;
-};
-
-export const getWidthOfText = (txt, fontsize, allCaps, bold) => {
-    const text = allCaps ? txt.toUpperCase() : txt;
-    if (getWidthOfText.c === undefined) {
-        getWidthOfText.c = document.createElement('canvas');
-        getWidthOfText.ctx = getWidthOfText.c.getContext('2d');
-    }
-    var fontspec = `${bold ? 'bold' : ''} ${fontsize}px` + ' ' + 'Signika, sans-serif';
-    if (getWidthOfText.ctx.font !== fontspec) getWidthOfText.ctx.font = fontspec;
-
-    return getWidthOfText.ctx.measureText(text).width;
-};
-
-export const padArray = (arr, len, fill) => {
-    return arr.concat(Array(len).fill(fill)).slice(0, len);
-};
-
-export const getTier = (level, asNr) => {
-    switch (Math.floor((level + 1) / 3)) {
-        case 1:
-            return asNr ? 1 : 'tier1';
-        case 2:
-            return asNr ? 2 : 'tier2';
-        case 3:
-            return asNr ? 3 : 'tier3';
-        default:
-            return asNr ? 0 : 'tier0';
-    }
-};
-
 export const capitalize = string => {
     return string.charAt(0).toUpperCase() + string.slice(1);
-};
-
-export const getPathValue = (path, entity, numeric) => {
-    const pathValue = foundry.utils.getProperty(entity, path);
-    if (pathValue) return numeric ? Number.parseInt(pathValue) : pathValue;
-
-    return numeric ? Number.parseInt(path) : path;
-};
-
-export const generateId = (title, length) => {
-    const id = title
-        .split(' ')
-        .map((w, i) => {
-            const p = w.slugify({ replacement: '', strict: true });
-            return i ? p.titleCase() : p;
-        })
-        .join('');
-    return Number.isNumeric(length) ? id.slice(0, length).padEnd(length, '0') : id;
 };
 
 export function rollCommandToJSON(text) {
@@ -122,14 +52,13 @@ export const getCommandTarget = () => {
     return target;
 };
 
-export const setDiceSoNiceForDualityRoll = (rollResult, advantageState) => {
-    const diceSoNicePresets = getDiceSoNicePresets();
-    rollResult.dice[0].options = { appearance: diceSoNicePresets.hope };
-    rollResult.dice[1].options = { appearance: diceSoNicePresets.fear }; //diceSoNicePresets.fear;
+export const setDiceSoNiceForDualityRoll = async (rollResult, advantageState, hopeFaces, fearFaces, advantageFaces) => {
+    const diceSoNicePresets = await getDiceSoNicePresets(hopeFaces, fearFaces, advantageFaces, advantageFaces);
+    rollResult.dice[0].options = diceSoNicePresets.hope;
+    rollResult.dice[1].options = diceSoNicePresets.fear;
     if (rollResult.dice[2] && advantageState) {
-        rollResult.dice[2].options = {
-            appearance: advantageState === 1 ? diceSoNicePresets.advantage : diceSoNicePresets.disadvantage
-        };
+        rollResult.dice[2].options =
+            advantageState === 1 ? diceSoNicePresets.advantage : diceSoNicePresets.disadvantage;
     }
 };
 
@@ -166,7 +95,7 @@ export const tagifyElement = (element, options, onChange, tagifyOptions = {}) =>
             mapValueTo: 'name',
             searchKeys: ['name'],
             enabled: 0,
-            maxItems: 20,
+            maxItems: 100,
             closeOnSelect: true,
             highlightFirst: false
         },
@@ -311,6 +240,49 @@ export function getDocFromElement(element) {
     return foundry.utils.fromUuidSync(target.dataset.itemUuid) ?? null;
 }
 
+/**
+ * Adds the update diff on a linkedItem property to update.options for use
+ * in _onUpdate via the updateLinkedItemApps function.
+ * @param {Array} changedItems            The candidate changed list
+ * @param {Array} currentItems            The current list
+ * @param {object} options                Additional options which modify the update request
+ */
+export function addLinkedItemsDiff(changedItems, currentItems, options) {
+    if (changedItems) {
+        const prevItems = new Set(currentItems);
+        const newItems = new Set(changedItems);
+        options.toLink = Array.from(
+            newItems
+                .difference(prevItems)
+                .map(item => item?.item ?? item)
+                .filter(x => (typeof x === 'object' ? x.item : x))
+        );
+
+        options.toUnlink = Array.from(
+            prevItems
+                .difference(newItems)
+                .map(item => item?.item?.uuid ?? item?.uuid ?? item)
+                .filter(x => (typeof x === 'object' ? x.item : x))
+        );
+    }
+}
+
+/**
+ * Adds or removes the current Application from linked document apps
+ * depending on an update diff in the linked item list.
+ * @param {object} options                Additional options which modify the update requests
+ * @param {object} sheet                  The application to add or remove from document apps
+ */
+export function updateLinkedItemApps(options, sheet) {
+    options.toLink?.forEach(featureUuid => {
+        const doc = foundry.utils.fromUuidSync(featureUuid);
+        doc.apps[sheet.id] = sheet;
+    });
+    options.toUnlink?.forEach(featureUuid => {
+        const doc = foundry.utils.fromUuidSync(featureUuid);
+        delete doc.apps[sheet.id];
+    });
+}
 
 export const itemAbleRollParse = (value, actor, item) => {
     if (!value) return value;
@@ -325,13 +297,7 @@ export const itemAbleRollParse = (value, actor, item) => {
 };
 
 export const arraysEqual = (a, b) =>
-  a.length === b.length &&
-  [...new Set([...a, ...b])].every(
-    v => a.filter(e => e === v).length === b.filter(e => e === v).length
-  );
+    a.length === b.length &&
+    [...new Set([...a, ...b])].every(v => a.filter(e => e === v).length === b.filter(e => e === v).length);
 
-export const setsEqual = (a, b) =>
-    a.size === b.size &&
-    [...a].every(
-        value => b.has(value)
-    );
+export const setsEqual = (a, b) => a.size === b.size && [...a].every(value => b.has(value));

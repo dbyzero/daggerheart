@@ -1,12 +1,10 @@
-import DHBaseAction from '../../data/action/baseAction.mjs';
-
 const fields = foundry.data.fields;
 
 export default class DHAdversaryRoll extends foundry.abstract.TypeDataModel {
     static defineSchema() {
         return {
             title: new fields.StringField(),
-            roll: new fields.DataField(),
+            roll: new fields.ObjectField(),
             targets: new fields.ArrayField(
                 new fields.SchemaField({
                     id: new fields.StringField({}),
@@ -44,7 +42,9 @@ export default class DHAdversaryRoll extends foundry.abstract.TypeDataModel {
         this.hasHitTarget = this.targets.filter(t => t.hit === true).length > 0;
         this.currentTargets =
             this.targetSelection !== true
-                ? Array.from(game.user.targets).map(t => DHBaseAction.formatTarget(t))
+                ? Array.from(game.user.targets).map(t =>
+                      game.system.api.fields.ActionFields.TargetField.formatTarget(t)
+                  )
                 : this.targets;
     }
 }

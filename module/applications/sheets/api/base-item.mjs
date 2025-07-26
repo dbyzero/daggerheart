@@ -20,7 +20,6 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
             submitOnChange: true
         },
         actions: {
-            removeAction: DHBaseItemSheet.#removeAction,
             addFeature: DHBaseItemSheet.#addFeature,
             deleteFeature: DHBaseItemSheet.#deleteFeature,
             addResource: DHBaseItemSheet.#addResource,
@@ -72,10 +71,10 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
                     secrets: this.item.isOwner
                 });
                 break;
-            case "effects":
-                await this._prepareEffectsContext(context, options)
+            case 'effects':
+                await this._prepareEffectsContext(context, options);
                 break;
-            case "features":
+            case 'features':
                 context.isGM = game.user.isGM;
                 break;
         }
@@ -93,7 +92,7 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
     async _prepareEffectsContext(context, _options) {
         context.effects = {
             actives: [],
-            inactives: [],
+            inactives: []
         };
 
         for (const effect of this.item.effects) {
@@ -113,30 +112,30 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
      * @protected
      */
     static #getFeatureContextOptions() {
-        const options = this._getContextMenuCommonOptions({ usable: true, toChat: true, deletable: false })
-        options.push(
-            {
-                name: 'CONTROLS.CommonDelete',
-                icon: '<i class="fa-solid fa-trash"></i>',
-                callback: async (target) => {
-                    const feature = getDocFromElement(target);
-                    if (!feature) return;
-                    const confirmed = await foundry.applications.api.DialogV2.confirm({
-                        window: {
-                            title: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.title', {
-                                type: game.i18n.localize(`TYPES.Item.feature`),
-                                name: feature.name
-                            })
-                        },
-                        content: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.text', { name: feature.name })
-                    });
-                    if (!confirmed) return;
-                    await this.document.update({
-                        'system.features': this.document.system.toObject().features.filter(uuid => uuid !== feature.uuid)
-                    });
-                },
+        const options = this._getContextMenuCommonOptions({ usable: true, toChat: true, deletable: false });
+        options.push({
+            name: 'CONTROLS.CommonDelete',
+            icon: '<i class="fa-solid fa-trash"></i>',
+            callback: async target => {
+                const feature = getDocFromElement(target);
+                if (!feature) return;
+                const confirmed = await foundry.applications.api.DialogV2.confirm({
+                    window: {
+                        title: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.title', {
+                            type: game.i18n.localize(`TYPES.Item.feature`),
+                            name: feature.name
+                        })
+                    },
+                    content: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.text', {
+                        name: feature.name
+                    })
+                });
+                if (!confirmed) return;
+                await this.document.update({
+                    'system.features': this.document.system.toObject().features.filter(uuid => uuid !== feature.uuid)
+                });
             }
-        )
+        });
         return options;
     }
 
@@ -145,47 +144,21 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
     /* -------------------------------------------- */
 
     /**
-     * Remove an action from the item.
-     * @type {ApplicationClickAction}
-     */
-    static async #removeAction(event, button) {
-        event.stopPropagation();
-        const actionIndex = button.closest('[data-index]').dataset.index;
-        const action = this.document.system.actions[actionIndex];
-
-        if(!event.shiftKey) {
-            const confirmed = await foundry.applications.api.DialogV2.confirm({
-                window: {
-                    title: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.title', {
-                        type: game.i18n.localize(`DAGGERHEART.GENERAL.Action.single`),
-                        name: action.name
-                    })
-                },
-                content: game.i18n.format('DAGGERHEART.APPLICATIONS.DeleteConfirmation.text', { name: action.name })
-            });
-            if (!confirmed) return;
-        }
-
-
-        await this.document.update({
-            'system.actions': this.document.system.actions.filter((_, index) => index !== Number.parseInt(actionIndex))
-        });
-    }
-
-    /**
      * Add a new feature to the item, prompting the user for its type.
      * @type {ApplicationClickAction}
      */
     static async #addFeature(_, target) {
         const { type } = target.dataset;
         const cls = foundry.documents.Item.implementation;
-        const feature = await cls.create({
+        const item = await cls.create({
             type: 'feature',
-            name: cls.defaultName({ type: 'feature' }),
-            "system.subType": CONFIG.DH.ITEM.featureSubTypes[type]
+            name: cls.defaultName({ type: 'feature' })
         });
         await this.document.update({
-            'system.features': [...this.document.system.features, feature].map(f => f.uuid)
+            'system.features': [...this.document.system.features, { type, item }].map(x => ({
+                ...x,
+                item: x.item?.uuid
+            }))
         });
     }
 
@@ -193,14 +166,14 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
      * Remove a feature from the item.
      * @type {ApplicationClickAction}
      */
-    static async #deleteFeature(_, target) {
+    static async #deleteFeature(_, element) {
+        const target = element.closest('[data-item-uuid]');
         const feature = getDocFromElement(target);
         if (!feature) return ui.notifications.warn(game.i18n.localize('DAGGERHEART.UI.Notifications.featureIsMissing'));
-        await feature.update({ 'system.subType': null });
         await this.document.update({
             'system.features': this.document.system.features
-                .map(x => x.uuid)
-                .filter(uuid => uuid !== feature.uuid)
+                .filter(x => target.dataset.type !== x.type || x.item.uuid !== feature.uuid)
+                .map(x => ({ ...x, item: x.item.uuid }))
         });
     }
 
@@ -273,10 +246,15 @@ export default class DHBaseItemSheet extends DHApplicationMixin(ItemSheetV2) {
         const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
         if (data.fromInternal) return;
 
+        const target = event.target.closest('fieldset.drop-section');
         const item = await fromUuid(data.uuid);
         if (item?.type === 'feature') {
-            const current = this.document.system.features.map(x => x.uuid);
-            await this.document.update({ 'system.features': [...current, item.uuid] });
+            await this.document.update({
+                'system.features': [...this.document.system.features, { type: target.dataset.type, item }].map(x => ({
+                    ...x,
+                    item: x.item?.uuid
+                }))
+            });
         }
     }
 }

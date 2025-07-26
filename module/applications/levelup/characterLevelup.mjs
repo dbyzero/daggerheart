@@ -1,7 +1,7 @@
 import LevelUpBase from './levelup.mjs';
 import { DhLevelup } from '../../data/levelup.mjs';
 import { domains } from '../../config/domainConfig.mjs';
-import { abilities } from '../../config/actorConfig.mjs';
+import { abilities, subclassFeatureLabels } from '../../config/actorConfig.mjs';
 
 export default class DhCharacterLevelUp extends LevelUpBase {
     constructor(actor) {
@@ -166,6 +166,7 @@ export default class DhCharacterLevelUp extends LevelUpBase {
                     context.multiclass = {
                         ...data,
                         ...(multiclass.toObject?.() ?? multiclass),
+                        type: 'multiclass',
                         uuid: multiclass.uuid,
                         domains:
                             multiclass?.system?.domains.map(key => {
@@ -349,8 +350,8 @@ export default class DhCharacterLevelUp extends LevelUpBase {
                             if (!acc) acc = {};
                             acc[traitKey] = {
                                 label: game.i18n.localize(abilities[traitKey].label),
-                                old: this.actor.system.traits[traitKey].max,
-                                new: this.actor.system.traits[traitKey].max + advancement.trait[traitKey]
+                                old: this.actor.system.traits[traitKey].value,
+                                new: this.actor.system.traits[traitKey].value + advancement.trait[traitKey]
                             };
                         }
                         return acc;

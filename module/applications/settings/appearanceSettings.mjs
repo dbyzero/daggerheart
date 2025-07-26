@@ -12,14 +12,17 @@ export default class DHAppearanceSettings extends HandlebarsApplicationMixin(App
     }
 
     get title() {
-        return game.i18n.localize('DAGGERHEART.SETTINGS.Menu.appearance.name');
+        return game.i18n.localize('DAGGERHEART.SETTINGS.Menu.title');
     }
 
     static DEFAULT_OPTIONS = {
         tag: 'form',
         id: 'daggerheart-appearance-settings',
-        classes: ['daggerheart', 'setting', 'dh-style'],
+        classes: ['daggerheart', 'dialog', 'dh-style', 'setting'],
         position: { width: '600', height: 'auto' },
+        window: {
+            icon: 'fa-solid fa-gears'
+        },
         actions: {
             reset: this.reset,
             save: this.save
@@ -33,9 +36,48 @@ export default class DHAppearanceSettings extends HandlebarsApplicationMixin(App
         }
     };
 
+    /** @inheritdoc */
+    static TABS = {
+        diceSoNice: {
+            tabs: [
+                { id: 'hope', label: 'DAGGERHEART.GENERAL.hope' },
+                { id: 'fear', label: 'DAGGERHEART.GENERAL.fear' },
+                { id: 'advantage', label: 'DAGGERHEART.GENERAL.Advantage.full' },
+                { id: 'disadvantage', label: 'DAGGERHEART.GENERAL.Advantage.full' }
+            ],
+            initial: 'hope'
+        }
+    };
+
+    changeTab(tab, group, options) {
+        super.changeTab(tab, group, options);
+
+        this.render();
+    }
+
     async _prepareContext(_options) {
         const context = await super._prepareContext(_options);
         context.settingFields = this.settings;
+
+        context.showDiceSoNice = game.modules.get('dice-so-nice')?.active;
+        if (game.dice3d) {
+            context.diceSoNiceTextures = game.dice3d.exports.TEXTURELIST;
+            context.diceSoNiceColorsets = game.dice3d.exports.COLORSETS;
+            context.diceSoNiceMaterials = Object.keys(game.dice3d.DiceFactory.material_options).map(key => ({
+                key: key,
+                name: `DICESONICE.Material${key.capitalize()}`
+            }));
+            context.diceSoNiceSystems = [];
+            for (const [key, system] of game.dice3d.DiceFactory.systems.entries()) {
+                context.diceSoNiceSystems.push({ key, name: system.name });
+            }
+        }
+
+        context.diceTab = {
+            key: this.tabGroups.diceSoNice,
+            source: this.settings._source.diceSoNice[this.tabGroups.diceSoNice],
+            fields: this.settings.schema.fields.diceSoNice.fields[this.tabGroups.diceSoNice].fields
+        };
 
         return context;
     }
@@ -61,5 +103,14 @@ export default class DHAppearanceSettings extends HandlebarsApplicationMixin(App
         );
 
         this.close();
+    }
+
+    _getTabs(tabs) {
+        for (const v of Object.values(tabs)) {
+            v.active = this.tabGroups[v.group] ? this.tabGroups[v.group] === v.id : v.active;
+            v.cssClass = v.active ? 'active' : '';
+        }
+
+        return tabs;
     }
 }

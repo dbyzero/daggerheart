@@ -132,7 +132,7 @@
             "label": "Adversaries",
             "system": "daggerheart",
             "path": "packs/adversaries.db",
-            "type": "Item",
+            "type": "Actor",
             "private": false,
             "flags": {}
         },
@@ -141,6 +141,15 @@
             "label": "Environments",
             "system": "daggerheart",
             "path": "packs/environments.db",
+            "type": "Actor",
+            "private": false,
+            "flags": {}
+        },
+        {
+            "name": "beastforms",
+            "label": "Beastforms",
+            "system": "daggerheart",
+            "path": "packs/beastforms.db",
             "type": "Item",
             "private": false,
             "flags": {}
@@ -157,7 +166,7 @@
                     "name": "Character Options",
                     "sorting": "m",
                     "color": "#000000",
-                    "packs": ["ancestries", "communities", "classes", "subclasses", "domains"]
+                    "packs": ["ancestries", "communities", "classes", "subclasses", "domains", "beastforms"]
                 },
                 {
                     "name": "Items",

@@ -15,13 +15,20 @@ Parameters:
 - showActions {boolean} : If true show feature's actions.
 --}}
 
-<li class="inventory-item" {{#if (eq type 'action' )}}data-action-id="{{item.id}}" {{/if}}
+<li class="inventory-item" {{#if (or (eq type 'action' ) (eq type 'attack'))}}data-action-id="{{item.id}}" {{/if}}
   data-item-uuid="{{item.uuid}}" data-type="{{type}}" draggable="true">
   <div class="inventory-item-header" {{#unless noExtensible}}data-action="toggleExtended" {{/unless}}>
     {{!-- Image --}}
     <div class="img-portait"
-      data-action='{{ifThen (hasProperty item "use") "useItem" (ifThen (hasProperty item "toChat") "toChat" "editDoc") }}'
-      {{#unless hideTooltip}}data-tooltip="#item#{{item.uuid}}" {{/unless}}>
+      data-action='{{ifThen (or (hasProperty item "use") (eq type 'attack')) "useItem" (ifThen (hasProperty item "toChat") "toChat" "editDoc") }}'
+      {{#unless hideTooltip}}
+        {{#if (eq type 'attack')}}
+          data-tooltip="#attack#{{item.actor.uuid}}" 
+        {{else}}
+          data-tooltip="#item#{{item.uuid}}" 
+        {{/if}}
+      {{/unless}}
+    >
       <img src="{{item.img}}" class="item-img {{#if isActor}}actor-img{{/if}}" />
       <img class="roll-img" src="systems/daggerheart/assets/icons/dice/default/d20.svg" alt="d20">
     </div>
@@ -30,7 +37,20 @@ Parameters:
     <div class="item-label {{#if hideResources}}fullWidth{{/if}}">
 
       {{!-- Item Name --}}
-      <div class="item-name">{{item.name}}</div>
+      <div class="item-name">{{localize item.name}}</div>
+
+      {{!-- Attack Block Start --}}
+      {{#if  (eq type 'attack')}}
+          <div class="item-tags">
+              <div class="tag">
+                  {{localize 'DAGGERHEART.GENERAL.unarmed'}}
+              </div>
+              <div class="tag">
+                  {{localize 'DAGGERHEART.CONFIG.ActionType.action'}}
+              </div>
+          </div>
+      {{/if}}
+      {{!-- Attack Block End --}}
 
       {{!-- Weapon Block Start --}}
       {{#if (eq type 'weapon')}}
@@ -166,7 +186,7 @@ Parameters:
     {{/if}}
     {{#if (and (not hideResources) item.system.quantity)}}
     <div class="item-resource">
-      <input type="number" class="inventory-item-quantity" value="{{item.system.quantity}}" step="1" />
+      <input type="number" class="inventory-item-quantity" value="{{item.system.quantity}}" min="0" />
     </div>
     {{/if}}
 
@@ -201,7 +221,7 @@ Parameters:
       {{else if (eq type 'effect')}}
       <a data-action="toggleEffect"
         data-tooltip="DAGGERHEART.UI.Tooltip.{{ifThen item.disabled 'enableEffect' 'disableEffect' }}">
-        <i class="{{ifThen item.disabled 'fa-regular fa-lightbulb' 'fa-solid fa-lightbulb'}}"></i>
+        <i class="{{ifThen item.disabled 'fa-solid fa-toggle-off' 'fa-solid fa-toggle-on'}}"></i>
       </a>
       {{/if}}
       {{#if (hasProperty item "toChat")}}
@@ -229,7 +249,7 @@ Parameters:
     {{#if (and showActions (eq item.type 'feature'))}}
     <div class="item-buttons">
       {{#each item.system.actions as | action |}}
-      <button type="button" data-action="useAction" data-action-id="{{action.id}}">
+      <button type="button" data-action="useItem" data-item-uuid="{{action.uuid}}">
         {{action.name}}
       </button>
       {{/each}}

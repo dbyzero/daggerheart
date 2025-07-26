@@ -92,7 +92,7 @@ export default class D20Roll extends DHRoll {
 
     configureModifiers() {
         this.applyAdvantage();
-        
+
         this.baseTerms = foundry.utils.deepClone(this.dice);
 
         this.options.roll.modifiers = this.applyBaseBonus();
@@ -147,13 +147,23 @@ export default class D20Roll extends DHRoll {
                 const difficulty = config.roll.difficulty ?? target.difficulty ?? target.evasion;
                 target.hit = this.isCritical || roll.total >= difficulty;
             });
-        } else if (config.roll.difficulty)
+        } else if (config.roll.difficulty) {
+            data.difficulty = config.roll.difficulty;
             data.success = roll.isCritical || roll.total >= config.roll.difficulty;
+        }
         data.advantage = {
             type: config.roll.advantage,
             dice: roll.dAdvantage?.denomination,
             value: roll.dAdvantage?.total
         };
+        data.dice = data.dice.map(dice => ({
+            ...dice,
+            results: dice.results.filter(x => !x.rerolled),
+            rerolled: {
+                any: dice.results.some(x => x.rerolled),
+                rerolls: dice.results.filter(x => x.rerolled)
+            }
+        }));
         data.isCritical = roll.isCritical;
         data.extra = roll.dice
             .filter(d => !roll.baseTerms.includes(d))
@@ -169,5 +179,43 @@ export default class D20Roll extends DHRoll {
 
     resetFormula() {
         return (this._formula = this.constructor.getFormula(this.terms));
+    }
+
+    static async reroll(rollString, _target, message) {
+        let parsedRoll = game.system.api.dice.D20Roll.fromData(rollString);
+        parsedRoll = await parsedRoll.reroll();
+        const newRoll = game.system.api.dice.D20Roll.postEvaluate(parsedRoll, {
+            targets: message.system.targets,
+            roll: {
+                advantage: message.system.roll.advantage?.type,
+                difficulty: message.system.roll.difficulty ? Number(message.system.roll.difficulty) : null
+            }
+        });
+
+        if (game.modules.get('dice-so-nice')?.active) {
+            await game.dice3d.showForRoll(parsedRoll, game.user, true);
+        }
+
+        const rerolled = {
+            any: true,
+            rerolls: [
+                ...(message.system.roll.dice[0].rerolled?.rerolls?.length > 0
+                    ? [message.system.roll.dice[0].rerolled?.rerolls]
+                    : []),
+                rollString.terms[0].results
+            ]
+        };
+        return {
+            newRoll: {
+                ...newRoll,
+                dice: [
+                    {
+                        ...newRoll.dice[0],
+                        rerolled: rerolled
+                    }
+                ]
+            },
+            parsedRoll
+        };
     }
 }

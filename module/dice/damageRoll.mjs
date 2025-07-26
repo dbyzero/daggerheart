@@ -11,11 +11,17 @@ export default class DamageRoll extends DHRoll {
     static DefaultDialog = DamageDialog;
 
     static async buildEvaluate(roll, config = {}, message = {}) {
-        if ( config.evaluate !== false ) {
-            for ( const roll of config.roll ) await roll.roll.evaluate();
+        if (config.evaluate !== false) {
+            if (config.dialog.configure === false) roll.constructFormula(config);
+            for (const roll of config.roll) await roll.roll.evaluate();
         }
         roll._evaluated = true;
-        const parts = config.roll.map(r => this.postEvaluate(r));
+        const parts = [];
+        for (let r of config.roll) {
+            const part = this.postEvaluate(r);
+            parts.push(part);
+        }
+
         config.roll = this.unifyDamageRoll(parts);
     }
 
@@ -27,7 +33,7 @@ export default class DamageRoll extends DHRoll {
             roll: roll.roll,
             type: config.type,
             modifierTotal: this.calculateTotalModifiers(roll.roll)
-        }
+        };
     }
 
     static async buildPost(roll, config, message) {
@@ -46,33 +52,33 @@ export default class DamageRoll extends DHRoll {
             resource.total += r.total;
             resource.parts.push(r);
             unified[r.applyTo] = resource;
-        })
+        });
         return unified;
     }
 
     static formatGlobal(rolls) {
         let formula, total;
         const applyTo = new Set(rolls.flatMap(r => r.applyTo));
-        if(applyTo.size > 1) {
+        if (applyTo.size > 1) {
             const data = {};
             rolls.forEach(r => {
-                if(data[r.applyTo]) {
-                    data[r.applyTo].formula += ` + ${r.formula}` ;
-                    data[r.applyTo].total += r.total ;
+                if (data[r.applyTo]) {
+                    data[r.applyTo].formula += ` + ${r.formula}`;
+                    data[r.applyTo].total += r.total;
                 } else {
                     data[r.applyTo] = {
                         formula: r.formula,
                         total: r.total
-                    }
+                    };
                 }
             });
-            formula = Object.entries(data).reduce((a, [k,v]) => a + ` ${k}: ${v.formula}`, '');
-            total = Object.entries(data).reduce((a, [k,v]) => a + ` ${k}: ${v.total}`, '');
+            formula = Object.entries(data).reduce((a, [k, v]) => a + ` ${k}: ${v.formula}`, '');
+            total = Object.entries(data).reduce((a, [k, v]) => a + ` ${k}: ${v.total}`, '');
         } else {
             formula = rolls.map(r => r.formula).join(' + ');
-            total = rolls.reduce((a,c) => a + c.total, 0)
+            total = rolls.reduce((a, c) => a + c.total, 0);
         }
-        return {formula, total}
+        return { formula, total };
     }
 
     applyBaseBonus(part) {
@@ -94,17 +100,17 @@ export default class DamageRoll extends DHRoll {
     }
 
     constructFormula(config) {
-        this.options.roll.forEach( part => {
-            part.roll = new Roll(part.formula);
-            this.constructFormulaPart(config, part)
-        })
+        this.options.roll.forEach(part => {
+            part.roll = new Roll(Roll.replaceFormulaData(part.formula, config.data));
+            this.constructFormulaPart(config, part);
+        });
         return this.options.roll;
     }
 
     constructFormulaPart(config, part) {
         part.roll.terms = Roll.parse(part.roll.formula, config.data);
 
-        if(part.applyTo === CONFIG.DH.GENERAL.healingTypes.hitPoints.id) {
+        if (part.applyTo === CONFIG.DH.GENERAL.healingTypes.hitPoints.id) {
             part.modifiers = this.applyBaseBonus(part);
             this.addModifiers(part);
             part.modifiers?.forEach(m => {
@@ -118,7 +124,7 @@ export default class DamageRoll extends DHRoll {
                 ...this.constructor.parse(part.extraFormula, this.options.data)
             );
         }
-        
+
         if (config.isCritical && part.applyTo === CONFIG.DH.GENERAL.healingTypes.hitPoints.id) {
             const tmpRoll = Roll.fromTerms(part.roll.terms)._evaluateSync({ maximize: true }),
                 criticalBonus = tmpRoll.total - this.constructor.calculateTotalModifiers(tmpRoll);

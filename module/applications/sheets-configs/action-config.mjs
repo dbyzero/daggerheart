@@ -2,10 +2,11 @@ import DaggerheartSheet from '../sheets/daggerheart-sheet.mjs';
 
 const { ApplicationV2 } = foundry.applications.api;
 export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
-    constructor(action) {
+    constructor(action, sheetUpdate) {
         super({});
 
         this.action = action;
+        this.sheetUpdate = sheetUpdate;
         this.openSection = null;
     }
 
@@ -105,7 +106,6 @@ export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
         if (!!this.action.effects) context.effects = this.action.effects.map(e => this.action.item.effects.get(e._id));
         if (this.action.damage?.hasOwnProperty('includeBase') && this.action.type === 'attack')
             context.hasBaseDamage = !!this.action.parent.attack;
-        context.getRealIndex = this.getRealIndex.bind(this);
         context.getEffectDetails = this.getEffectDetails.bind(this);
         context.costOptions = this.getCostOptions();
         context.disableOption = this.disableOption.bind(this);
@@ -114,7 +114,7 @@ export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
 
         const settingsTiers = game.settings.get(CONFIG.DH.id, CONFIG.DH.SETTINGS.gameSettings.LevelTiers).tiers;
         context.tierOptions = [
-            { key: 1, label: game.i18n.localize('DAGGERHEART.GENERAL.Tiers.tier1') },
+            { key: 1, label: game.i18n.localize('DAGGERHEART.GENERAL.Tiers.1') },
             ...Object.values(settingsTiers).map(x => ({ key: x.tier, label: x.name }))
         ];
 
@@ -147,11 +147,6 @@ export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
         return filtered;
     }
 
-    getRealIndex(index) {
-        const data = this.action.toObject(false);
-        return data.damage.parts.find(d => d.base) ? index - 1 : index;
-    }
-
     getEffectDetails(id) {
         return this.action.item.effects.get(id);
     }
@@ -175,19 +170,10 @@ export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
 
     static async updateForm(event, _, formData) {
         const submitData = this._prepareSubmitData(event, formData),
-            data = foundry.utils.mergeObject(this.action.toObject(), submitData),
-            container = foundry.utils.getProperty(this.action.parent, this.action.systemPath);
-        let newActions;
-        if (Array.isArray(container)) {
-            newActions = foundry.utils.getProperty(this.action.parent, this.action.systemPath).map(x => x.toObject());
-            if (!newActions.findSplice(x => x._id === data._id, data)) newActions.push(data);
-        } else newActions = data;
+            data = foundry.utils.mergeObject(this.action.toObject(), submitData);
+        this.action = await this.action.update(data);
 
-        const updates = await this.action.parent.parent.update({ [`system.${this.action.systemPath}`]: newActions });
-        if (!updates) return;
-        this.action = Array.isArray(container)
-            ? foundry.utils.getProperty(updates.system, this.action.systemPath)[this.action.index]
-            : foundry.utils.getProperty(updates.system, this.action.systemPath);
+        this.sheetUpdate?.(this.action);
         this.render();
     }
 
@@ -210,8 +196,10 @@ export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
 
     static addDamage(event) {
         if (!this.action.damage.parts) return;
-        const data = this.action.toObject();
-        data.damage.parts.push({});
+        const data = this.action.toObject(),
+            part = {};
+        if (this.action.actor?.isNPC) part.value = { multiplier: 'flat' };
+        data.damage.parts.push(part);
         this.constructor.updateForm.bind(this)(null, null, { object: foundry.utils.flattenObject(data) });
     }
 
@@ -251,7 +239,7 @@ export default class DHActionConfig extends DaggerheartSheet(ApplicationV2) {
         if (!this.action.effects) return;
         const index = button.dataset.index,
             effectId = this.action.effects[index]._id;
-        this.constructor.removeElement.bind(this)(event);
+        this.constructor.removeElement.bind(this)(event, button);
         this.action.item.deleteEmbeddedDocuments('ActiveEffect', [effectId]);
     }
 

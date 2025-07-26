@@ -259,7 +259,12 @@ export default class CharacterSheet extends DHBaseActorSheet {
                 name: 'toLoadout',
                 icon: 'fa-solid fa-arrow-up',
                 condition: target => getDocFromElement(target).system.inVault,
-                callback: target => getDocFromElement(target).update({ 'system.inVault': false })
+                callback: target => {
+                    const doc = getDocFromElement(target),
+                        actorLoadout = doc.actor.system.loadoutSlot;
+                    if(actorLoadout.available) return doc.update({ 'system.inVault': false });
+                    ui.notifications.warn(game.i18n.format('DAGGERHEART.UI.Notifications.loadoutMaxReached', { max: actorLoadout.max }))
+                }
             },
             {
                 name: 'toVault',
@@ -517,9 +522,10 @@ export default class CharacterSheet extends DHBaseActorSheet {
         const item = getDocFromElement(event.currentTarget);
         if (!item) return;
 
-        const max = item.system.resource.max ? itemAbleRollParse(item.system.resource.max, this.document, item) : null;
+        const max = event.currentTarget.max ? Number(event.currentTarget.max) : null;
         const value = max ? Math.min(Number(event.currentTarget.value), max) : event.currentTarget.value;
         await item.update({ 'system.resource.value': value });
+        this.render();
     }
 
     async updateItemQuantity(event) {
@@ -527,6 +533,7 @@ export default class CharacterSheet extends DHBaseActorSheet {
         if (!item) return;
 
         await item.update({ 'system.quantity': event.currentTarget.value });
+        this.render();
     }
 
     async updateArmorMarks(event) {
@@ -619,6 +626,12 @@ export default class CharacterSheet extends DHBaseActorSheet {
                 await item.update({ 'system.equipped': true });
                 break;
             case 'weapon':
+                if (this.document.effects.find(x => x.type === 'beastform')) {
+                    return ui.notifications.warn(
+                        game.i18n.localize('DAGGERHEART.UI.Notifications.beastformEquipWeapon')
+                    );
+                }
+
                 await this.document.system.constructor.unequipBeforeEquip.bind(this.document.system)(item);
 
                 await item.update({ 'system.equipped': true });
@@ -721,7 +734,7 @@ export default class CharacterSheet extends DHBaseActorSheet {
         const item = await Item.implementation.fromDropData(data);
         const itemData = item.toObject();
 
-        if (item.type === 'domainCard' && this.document.system.domainCards.loadout.length >= 5) {
+        if (item.type === 'domainCard' && !this.document.system.loadoutSlot.available) {
             itemData.system.inVault = true;
         }
 

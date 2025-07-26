@@ -1,5 +1,4 @@
 export { default as BeastformDialog } from './beastformDialog.mjs';
-export { default as costSelectionDialog } from './costSelectionDialog.mjs';
 export { default as d20RollDialog } from './d20RollDialog.mjs';
 export { default as DamageDialog } from './damageDialog.mjs';
 export { default as DamageReductionDialog } from './damageReductionDialog.mjs';
@@ -8,3 +7,4 @@ export { default as DeathMove } from './deathMove.mjs';
 export { default as Downtime } from './downtime.mjs';
 export { default as OwnershipSelection } from './ownershipSelection.mjs';
 export { default as ResourceDiceDialog } from './resourceDiceDialog.mjs';
+export { default as ActionSelectionDialog } from './actionSelectionDialog.mjs';

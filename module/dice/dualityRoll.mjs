@@ -1,6 +1,7 @@
 import D20RollDialog from '../applications/dialogs/d20RollDialog.mjs';
 import D20Roll from './d20Roll.mjs';
 import { setDiceSoNiceForDualityRoll } from '../helpers/utils.mjs';
+import { getDiceSoNicePresets } from '../config/generalConfig.mjs';
 
 export default class DualityRoll extends D20Roll {
     _advantageFaces = 6;
@@ -63,24 +64,22 @@ export default class DualityRoll extends D20Roll {
     }
 
     setRallyChoices() {
-        return this.data?.parent?.effects.reduce((a,c) => {
-                const change = c.changes.find(ch => ch.key === 'system.bonuses.rally');
-                if(change) a.push({ value: c.id, label: change.value });
-                return a;
-            }, []);
+        return this.data?.parent?.effects.reduce((a, c) => {
+            const change = c.changes.find(ch => ch.key === 'system.bonuses.rally');
+            if (change) a.push({ value: c.id, label: change.value });
+            return a;
+        }, []);
     }
 
     get dRally() {
-        if(!this.rallyFaces) return null;
-        if(this.hasDisadvantage || this.hasAdvantage)
-            return this.dice[3];
-        else
-            return this.dice[2];
+        if (!this.rallyFaces) return null;
+        if (this.hasDisadvantage || this.hasAdvantage) return this.dice[3];
+        else return this.dice[2];
     }
 
     get rallyFaces() {
         const rallyChoice = this.rallyChoices?.find(r => r.value === this._rallyIndex)?.label;
-        return rallyChoice ? this.getFaces(rallyChoice) :  null;
+        return rallyChoice ? this.getFaces(rallyChoice) : null;
     }
 
     get isCritical() {
@@ -112,6 +111,13 @@ export default class DualityRoll extends D20Roll {
         return [...(hooks ?? []), 'Duality'];
     }
 
+    /** @inheritDoc */
+    static fromData(data) {
+        data.terms[0].class = game.system.api.dice.DualityDie.name;
+        data.terms[2].class = game.system.api.dice.DualityDie.name;
+        return super.fromData(data);
+    }
+
     createBaseDice() {
         if (
             this.dice[0] instanceof CONFIG.Dice.daggerheart.DualityDie &&
@@ -129,13 +135,13 @@ export default class DualityRoll extends D20Roll {
         if (this.hasAdvantage || this.hasDisadvantage) {
             const dieFaces = this.advantageFaces,
                 advDie = new foundry.dice.terms.Die({ faces: dieFaces, number: this.advantageNumber });
-            if(this.advantageNumber > 1) advDie.modifiers = ['kh'];
+            if (this.advantageNumber > 1) advDie.modifiers = ['kh'];
             this.terms.push(
                 new foundry.dice.terms.OperatorTerm({ operator: this.hasDisadvantage ? '-' : '+' }),
                 advDie
             );
         }
-        if(this.rallyFaces)
+        if (this.rallyFaces)
             this.terms.push(
                 new foundry.dice.terms.OperatorTerm({ operator: this.hasDisadvantage ? '-' : '+' }),
                 new foundry.dice.terms.Die({ faces: this.rallyFaces })
@@ -160,16 +166,36 @@ export default class DualityRoll extends D20Roll {
         return modifiers;
     }
 
+    static async buildEvaluate(roll, config = {}, message = {}) {
+        await super.buildEvaluate(roll, config, message);
+
+        await setDiceSoNiceForDualityRoll(
+            roll,
+            config.roll.advantage.type,
+            config.roll.hope.dice,
+            config.roll.fear.dice,
+            config.roll.advantage.dice
+        );
+    }
+
     static postEvaluate(roll, config = {}) {
         const data = super.postEvaluate(roll, config);
-        
+
         data.hope = {
             dice: roll.dHope.denomination,
-            value: roll.dHope.total
+            value: roll.dHope.total,
+            rerolled: {
+                any: roll.dHope.results.some(x => x.rerolled),
+                rerolls: roll.dHope.results.filter(x => x.rerolled)
+            }
         };
         data.fear = {
             dice: roll.dFear.denomination,
-            value: roll.dFear.total
+            value: roll.dFear.total,
+            rerolled: {
+                any: roll.dFear.results.some(x => x.rerolled),
+                rerolls: roll.dFear.results.filter(x => x.rerolled)
+            }
         };
         data.rally = {
             dice: roll.dRally?.denomination,
@@ -181,11 +207,56 @@ export default class DualityRoll extends D20Roll {
             label: roll.totalLabel
         };
 
-        if(roll._rallyIndex && roll.data?.parent) 
+        if (roll._rallyIndex && roll.data?.parent)
             roll.data.parent.deleteEmbeddedDocuments('ActiveEffect', [roll._rallyIndex]);
 
-        setDiceSoNiceForDualityRoll(roll, data.advantage.type);
-
         return data;
+    }
+
+    static async reroll(rollString, target, message) {
+        let parsedRoll = game.system.api.dice.DualityRoll.fromData({ ...rollString, evaluated: false });
+        const term = parsedRoll.terms[target.dataset.dieIndex];
+        await term.reroll(`/r1=${term.total}`);
+        if (game.modules.get('dice-so-nice')?.active) {
+            const diceSoNiceRoll = {
+                _evaluated: true,
+                dice: [
+                    new foundry.dice.terms.Die({
+                        ...term,
+                        faces: term._faces,
+                        results: term.results.filter(x => !x.rerolled)
+                    })
+                ],
+                options: { appearance: {} }
+            };
+
+            const diceSoNicePresets = await getDiceSoNicePresets(`d${term._faces}`, `d${term._faces}`);
+            const type = target.dataset.type;
+            if (diceSoNicePresets[type]) {
+                diceSoNiceRoll.dice[0].options = diceSoNicePresets[type];
+            }
+
+            await game.dice3d.showForRoll(diceSoNiceRoll, game.user, true);
+        }
+
+        await parsedRoll.evaluate();
+
+        const newRoll = game.system.api.dice.DualityRoll.postEvaluate(parsedRoll, {
+            targets: message.system.targets,
+            roll: {
+                advantage: message.system.roll.advantage?.type,
+                difficulty: message.system.roll.difficulty ? Number(message.system.roll.difficulty) : null
+            }
+        });
+        newRoll.extra = newRoll.extra.slice(2);
+
+        Hooks.call(`${CONFIG.DH.id}.postRollDuality`, {
+            source: { actor: message.system.source.actor ?? '' },
+            targets: message.system.targets,
+            roll: newRoll,
+            rerolledRoll:
+                newRoll.result.duality !== message.system.roll.result.duality ? message.system.roll : undefined
+        });
+        return { newRoll, parsedRoll };
     }
 }

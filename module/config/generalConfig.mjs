@@ -138,23 +138,24 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-bandage',
             img: 'icons/magic/life/cross-worn-green.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.tendToWounds.description'),
-            actions: [
-                {
+            actions: {
+                tendToWounds: {
                     type: 'healing',
                     name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.tendToWounds.name'),
                     img: 'icons/magic/life/cross-worn-green.webp',
                     actionType: 'action',
+                    chatDisplay: false,
                     healing: {
-                        type: 'health',
+                        applyTo: healingTypes.hitPoints.id,
                         value: {
                             custom: {
                                 enabled: true,
-                                formula: '1d4 + 1' // should be 1d4 + {tier}. How to use the roll param?
+                                formula: '1d4 + @tier'
                             }
                         }
                     }
                 }
-            ]
+            }
         },
         clearStress: {
             id: 'clearStress',
@@ -162,23 +163,24 @@ export const defaultRestOptions = {
             icon: 'fa-regular fa-face-surprise',
             img: 'icons/magic/perception/eye-ringed-green.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.clearStress.description'),
-            actions: [
-                {
+            actions: {
+                clearStress: {
                     type: 'healing',
                     name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.clearStress.name'),
                     img: 'icons/magic/perception/eye-ringed-green.webp',
                     actionType: 'action',
+                    chatDisplay: false,
                     healing: {
-                        type: 'stress',
+                        applyTo: healingTypes.stress.id,
                         value: {
                             custom: {
                                 enabled: true,
-                                formula: '1d4 + 1' // should be 1d4 + {tier}. How to use the roll param?
+                                formula: '1d4 + @tier'
                             }
                         }
                     }
                 }
-            ]
+            }
         },
         repairArmor: {
             id: 'repairArmor',
@@ -186,7 +188,24 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-hammer',
             img: 'icons/skills/trades/smithing-anvil-silver-red.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.repairArmor.description'),
-            actions: []
+            actions: {
+                repairArmor: {
+                    type: 'healing',
+                    name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.repairArmor.name'),
+                    img: 'icons/skills/trades/smithing-anvil-silver-red.webp',
+                    actionType: 'action',
+                    chatDisplay: false,
+                    healing: {
+                        applyTo: healingTypes.armorStack.id,
+                        value: {
+                            custom: {
+                                enabled: true,
+                                formula: '1d4 + @tier'
+                            }
+                        }
+                    }
+                }
+            }
         },
         prepare: {
             id: 'prepare',
@@ -194,7 +213,7 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-dumbbell',
             img: 'icons/skills/trades/academics-merchant-scribe.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.shortRest.prepare.description'),
-            actions: []
+            actions: {}
         }
     }),
     longRest: () => ({
@@ -204,7 +223,24 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-bandage',
             img: 'icons/magic/life/cross-worn-green.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.tendToWounds.description'),
-            actions: []
+            actions: {
+                tendToWounds: {
+                    type: 'healing',
+                    name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.tendToWounds.name'),
+                    img: 'icons/magic/life/cross-worn-green.webp',
+                    actionType: 'action',
+                    chatDisplay: false,
+                    healing: {
+                        applyTo: healingTypes.hitPoints.id,
+                        value: {
+                            custom: {
+                                enabled: true,
+                                formula: '@system.resources.hitPoints.max'
+                            }
+                        }
+                    }
+                }
+            }
         },
         clearStress: {
             id: 'clearStress',
@@ -212,7 +248,24 @@ export const defaultRestOptions = {
             icon: 'fa-regular fa-face-surprise',
             img: 'icons/magic/perception/eye-ringed-green.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.clearStress.description'),
-            actions: []
+            actions: {
+                clearStress: {
+                    type: 'healing',
+                    name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.clearStress.name'),
+                    img: 'icons/magic/perception/eye-ringed-green.webp',
+                    actionType: 'action',
+                    chatDisplay: false,
+                    healing: {
+                        applyTo: healingTypes.stress.id,
+                        value: {
+                            custom: {
+                                enabled: true,
+                                formula: '@system.resources.stress.max'
+                            }
+                        }
+                    }
+                }
+            }
         },
         repairArmor: {
             id: 'repairArmor',
@@ -220,7 +273,24 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-hammer',
             img: 'icons/skills/trades/smithing-anvil-silver-red.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.repairArmor.description'),
-            actions: []
+            actions: {
+                repairArmor: {
+                    type: 'healing',
+                    name: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.repairArmor.name'),
+                    img: 'icons/skills/trades/smithing-anvil-silver-red.webp',
+                    actionType: 'action',
+                    chatDisplay: false,
+                    healing: {
+                        applyTo: healingTypes.armorStack.id,
+                        value: {
+                            custom: {
+                                enabled: true,
+                                formula: '@system.armorScore'
+                            }
+                        }
+                    }
+                }
+            }
         },
         prepare: {
             id: 'prepare',
@@ -228,7 +298,7 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-dumbbell',
             img: 'icons/skills/trades/academics-merchant-scribe.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.prepare.description'),
-            actions: []
+            actions: {}
         },
         workOnAProject: {
             id: 'workOnAProject',
@@ -236,7 +306,7 @@ export const defaultRestOptions = {
             icon: 'fa-solid fa-diagram-project',
             img: 'icons/skills/social/thumbsup-approval-like.webp',
             description: game.i18n.localize('DAGGERHEART.APPLICATIONS.Downtime.longRest.workOnAProject.description'),
-            actions: []
+            actions: {}
         }
     })
 };
@@ -263,25 +333,21 @@ export const deathMoves = {
 };
 
 export const tiers = {
-    tier1: {
-        id: 'tier1',
-        label: 'DAGGERHEART.GENERAL.Tiers.tier1',
-        value: 1
+    1: {
+        id: 1,
+        label: 'DAGGERHEART.GENERAL.Tiers.1'
     },
-    tier2: {
-        id: 'tier2',
-        label: 'DAGGERHEART.GENERAL.Tiers.tier2',
-        value: 2
+    2: {
+        id: 2,
+        label: 'DAGGERHEART.GENERAL.Tiers.2'
     },
-    tier3: {
-        id: 'tier3',
-        label: 'DAGGERHEART.GENERAL.Tiers.tier3',
-        value: 3
+    3: {
+        id: 3,
+        label: 'DAGGERHEART.GENERAL.Tiers.3'
     },
-    tier4: {
-        id: 'tier4',
-        label: 'DAGGERHEART.GENERAL.Tiers.tier4',
-        value: 4
+    4: {
+        id: 4,
+        label: 'DAGGERHEART.GENERAL.Tiers.4'
     }
 };
 
@@ -309,42 +375,28 @@ export const diceSetNumbers = {
     flat: 'Flat'
 };
 
-export const getDiceSoNicePresets = () => {
+export const getDiceSoNicePresets = async (hopeFaces, fearFaces, advantageFaces = 'd6', disadvantageFaces = 'd6') => {
     const { diceSoNice } = game.settings.get(CONFIG.DH.id, CONFIG.DH.SETTINGS.gameSettings.appearance);
+    const getPreset = async (type, faces) => {
+        const system = game.dice3d.DiceFactory.systems.get(type.system).dice.get(faces);
+        if (!system.modelLoaded) {
+            await system.loadModel(game.dice3d.DiceFactory.loaderGLTF);
+        }
+
+        return {
+            modelFile: system.modelFile,
+            appearance: {
+                ...system.appearance,
+                ...type
+            }
+        };
+    };
 
     return {
-        hope: {
-            ...diceSoNice.hope,
-            colorset: 'inspired',
-            texture: 'bloodmoon',
-            material: 'metal',
-            font: 'Arial Black',
-            system: 'standard'
-        },
-        fear: {
-            ...diceSoNice.fear,
-            colorset: 'bloodmoon',
-            texture: 'bloodmoon',
-            material: 'metal',
-            font: 'Arial Black',
-            system: 'standard'
-        },
-        advantage: {
-            ...diceSoNice.advantage,
-            colorset: 'bloodmoon',
-            texture: 'bloodmoon',
-            material: 'metal',
-            font: 'Arial Black',
-            system: 'standard'
-        },
-        disadvantage: {
-            ...diceSoNice.disadvantage,
-            colorset: 'bloodmoon',
-            texture: 'bloodmoon',
-            material: 'metal',
-            font: 'Arial Black',
-            system: 'standard'
-        }
+        hope: await getPreset(diceSoNice.hope, hopeFaces),
+        fear: await getPreset(diceSoNice.fear, fearFaces),
+        advantage: await getPreset(diceSoNice.advantage, advantageFaces),
+        disadvantage: await getPreset(diceSoNice.disadvantage, disadvantageFaces)
     };
 };
 

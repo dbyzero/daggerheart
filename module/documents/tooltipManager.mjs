@@ -1,19 +1,22 @@
 export default class DhTooltipManager extends foundry.helpers.interaction.TooltipManager {
     async activate(element, options = {}) {
+        const { TextEditor } = foundry.applications.ux;
+
         let html = options.html;
         if (element.dataset.tooltip?.startsWith('#item#')) {
-            const splitValues = element.dataset.tooltip.slice(6).split('#action#');
-            const itemUuid = splitValues[0];
-            const actionId = splitValues.length > 1 ? splitValues[1] : null;
-
-            const baseItem = await foundry.utils.fromUuid(itemUuid);
-            const item = actionId ? baseItem.system.actions.find(x => x.id === actionId) : baseItem;
+            const itemUuid = element.dataset.tooltip.slice(6);
+            const item = await foundry.utils.fromUuid(itemUuid);
             if (item) {
-                const type = actionId ? 'action' : item.type;
+                const isAction = item instanceof game.system.api.models.actions.actionsTypes.base;
+                const isEffect = item instanceof ActiveEffect;
+                await this.enrichText(item, isAction || isEffect);
+
+                const type = isAction ? 'action' : isEffect ? 'effect' : item.type;
                 html = await foundry.applications.handlebars.renderTemplate(
                     `systems/daggerheart/templates/ui/tooltip/${type}.hbs`,
                     {
                         item: item,
+                        description: item.system?.enrichedDescription ?? item.enrichedDescription,
                         config: CONFIG.DH
                     }
                 );
@@ -22,6 +25,26 @@ export default class DhTooltipManager extends foundry.helpers.interaction.Toolti
                 options.direction = this._determineItemTooltipDirection(element);
             }
         } else {
+            const attack = element.dataset.tooltip?.startsWith('#attack#');
+            if (attack) {
+                const actorUuid = element.dataset.tooltip.slice(8);
+                const actor = await foundry.utils.fromUuid(actorUuid);
+                const attack = actor.system.attack;
+
+                const description = await TextEditor.enrichHTML(attack.description);
+                html = await foundry.applications.handlebars.renderTemplate(
+                    `systems/daggerheart/templates/ui/tooltip/attack.hbs`,
+                    {
+                        attack: attack,
+                        description: description,
+                        parent: actor,
+                        config: CONFIG.DH
+                    }
+                );
+
+                this.tooltip.innerHTML = html;
+            }
+
             const shortRest = element.dataset.tooltip?.startsWith('#shortRest#');
             const longRest = element.dataset.tooltip?.startsWith('#longRest#');
             if (shortRest || longRest) {
@@ -29,11 +52,14 @@ export default class DhTooltipManager extends foundry.helpers.interaction.Toolti
                 const downtimeOptions = shortRest
                     ? CONFIG.DH.GENERAL.defaultRestOptions.shortRest()
                     : CONFIG.DH.GENERAL.defaultRestOptions.longRest();
+
                 const move = downtimeOptions[key];
+                const description = await TextEditor.enrichHTML(move.description);
                 html = await foundry.applications.handlebars.renderTemplate(
                     `systems/daggerheart/templates/ui/tooltip/downtime.hbs`,
                     {
-                        move: move
+                        move: move,
+                        description: description
                     }
                 );
 
@@ -94,6 +120,39 @@ export default class DhTooltipManager extends foundry.helpers.interaction.Toolti
                         ? this.constructor.TOOLTIP_DIRECTIONS.LEFT
                         : this.constructor.TOOLTIP_DIRECTIONS.DOWN
                 ];
+        }
+    }
+
+    async enrichText(item, flatStructure) {
+        const { TextEditor } = foundry.applications.ux;
+        const enrichPaths = [
+            { path: flatStructure ? '' : 'system', name: 'description' },
+            { path: 'system', name: 'features' },
+            { path: 'system', name: 'actions' },
+            { path: 'system', name: 'customActions' }
+        ];
+
+        for (let data of enrichPaths) {
+            const basePath = `${data.path ? `${data.path}.` : ''}${data.name}`;
+            const pathValue = foundry.utils.getProperty(item, basePath);
+            if (!pathValue) continue;
+
+            if (Array.isArray(pathValue) || pathValue.size) {
+                for (const [index, itemValue] of pathValue.entries()) {
+                    const itemIsAction = itemValue instanceof game.system.api.models.actions.actionsTypes.base;
+                    const value = itemIsAction || !itemValue?.item ? itemValue : itemValue.item;
+                    const enrichedValue = await TextEditor.enrichHTML(value.description);
+                    if (itemIsAction) value.enrichedDescription = enrichedValue;
+                    else foundry.utils.setProperty(item, `${basePath}.${index}.enrichedDescription`, enrichedValue);
+                }
+            } else {
+                const enrichedValue = await TextEditor.enrichHTML(pathValue);
+                foundry.utils.setProperty(
+                    item,
+                    `${data.path ? `${data.path}.` : ''}enriched${data.name.capitalize()}`,
+                    enrichedValue
+                );
+            }
         }
     }
 }
