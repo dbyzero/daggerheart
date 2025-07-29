@@ -946,14 +946,9 @@ export const weaponFeatures = {
                         value: '-1'
                     },
                     {
-                        key: 'system.bonuses.damage.primaryWeapon.extraDice',
+                        key: 'system.bonuses.damage.primaryWeapon.addDiceAndDiscardLowest',
                         mode: 2,
-                        value: '1'
-                    },
-                    {
-                        key: 'system.rules.weapon.dropLowestDamageDice',
-                        mode: 5,
-                        value: '1'
+                        value: true
                     }
                 ]
             }
@@ -1048,31 +1043,16 @@ export const weaponFeatures = {
     powerful: {
         label: 'DAGGERHEART.CONFIG.WeaponFeature.powerful.name',
         description: 'DAGGERHEART.CONFIG.WeaponFeature.powerful.description',
-        actions: [
+        effects: [
             {
-                type: 'effect',
-                actionType: 'action',
-                chatDisplay: true,
                 name: 'DAGGERHEART.CONFIG.WeaponFeature.powerful.name',
                 description: 'DAGGERHEART.CONFIG.WeaponFeature.powerful.description',
                 img: 'icons/magic/control/buff-flight-wings-runes-red-yellow.webp',
-                effects: [
+                changes: [
                     {
-                        name: 'DAGGERHEART.CONFIG.WeaponFeature.powerful.name',
-                        description: 'DAGGERHEART.CONFIG.WeaponFeature.powerful.description',
-                        img: 'icons/magic/control/buff-flight-wings-runes-red-yellow.webp',
-                        changes: [
-                            {
-                                key: 'system.bonuses.damage.primaryWeapon.extraDice',
-                                mode: 2,
-                                value: '1'
-                            },
-                            {
-                                key: 'system.rules.weapon.dropLowestDamageDice',
-                                mode: 5,
-                                value: '1'
-                            }
-                        ]
+                        key: 'system.bonuses.damage.primaryWeapon.addDiceAndDiscardLowest',
+                        mode: 2,
+                        value: true
                     }
                 ]
             }

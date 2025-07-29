@@ -132,6 +132,16 @@ export default class DamageRoll extends DHRoll {
                 criticalBonus = tmpRoll.total - this.constructor.calculateTotalModifiers(tmpRoll);
             part.roll.terms.push(...this.formatModifier(criticalBonus));
         }
+
+        if ( config.data.bonuses.damage.primaryWeapon?.addDiceAndDiscardLowest) {
+            const index = part.roll.terms.findIndex(t => t instanceof foundry.dice.terms.Die);
+            if (index !== -1) {
+                const diceTerm = part.roll.terms[index];
+                diceTerm.modifiers = ['k' + diceTerm.number];
+                diceTerm.number += 1;
+            }
+        }
+
         return (part.roll._formula = this.constructor.getFormula(part.roll.terms));
     }
 }
